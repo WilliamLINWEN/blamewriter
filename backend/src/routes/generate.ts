@@ -1,4 +1,6 @@
 import express from 'express';
+import { parseBitbucketPRUrl, BitbucketUrlError, formatBitbucketUrlError } from '../utils/bitbucket';
+import { createBitbucketClient, BitbucketServiceError, formatBitbucketServiceError } from '../services/bitbucket';
 
 /**
  * Request interface for the generate MVP endpoint
@@ -200,24 +202,121 @@ async function handleGenerateMVP(
     console.log(`✅ Request validation passed for PR: ${prUrl}`);
     console.log(`🔑 Token provided: ${bitbucketToken.substring(0, 8)}...`);
     
-    // TODO: Implement Bitbucket API integration
-    // TODO: Implement OpenAI API integration
-    // For now, return a placeholder response to complete the endpoint structure
+    // Parse the PR URL to extract workspace, repo, and PR ID
+    let prInfo;
+    try {
+      prInfo = parseBitbucketPRUrl(prUrl);
+      console.log(`🔍 Parsed PR info:`, {
+        workspace: prInfo.workspace,
+        repo: prInfo.repo,
+        prId: prInfo.prId
+      });
+    } catch (error: unknown) {
+      if (error instanceof BitbucketUrlError) {
+        console.log('❌ PR URL parsing failed:', error.message);
+        
+        const errorResponse = createErrorResponse(
+          'INVALID_PR_URL',
+          'Invalid Bitbucket PR URL',
+          formatBitbucketUrlError(error)
+        );
+        
+        res.status(400).json(errorResponse);
+        return;
+      }
+      
+      // Re-throw unexpected errors
+      throw error;
+    }
+    
+    // Create Bitbucket API client
+    const bitbucketClient = createBitbucketClient(bitbucketToken);
+    
+    // Fetch PR diff from Bitbucket API
+    let prDiff;
+    try {
+      console.log(`🌐 Fetching PR diff from Bitbucket API...`);
+      prDiff = await bitbucketClient.fetchPRDiff(prInfo);
+      console.log(`✅ PR diff fetched successfully, size: ${prDiff.size} bytes`);
+      
+      // Log a preview of the diff (first 200 characters)
+      const diffPreview = prDiff.diff.substring(0, 200).replace(/\n/g, '\\n');
+      console.log(`📄 Diff preview: ${diffPreview}${prDiff.diff.length > 200 ? '...' : ''}`);
+      
+    } catch (error: unknown) {
+      if (error instanceof BitbucketServiceError) {
+        console.log('❌ Bitbucket API request failed:', error.message);
+        
+        let statusCode = 500;
+        let errorCode = 'BITBUCKET_API_ERROR';
+        
+        // Map specific error codes to appropriate HTTP status codes
+        switch (error.code) {
+          case 'UNAUTHORIZED':
+            statusCode = 401;
+            errorCode = 'INVALID_TOKEN';
+            break;
+          case 'FORBIDDEN':
+            statusCode = 403;
+            errorCode = 'ACCESS_DENIED';
+            break;
+          case 'NOT_FOUND':
+            statusCode = 404;
+            errorCode = 'PR_NOT_FOUND';
+            break;
+          case 'RATE_LIMITED':
+            statusCode = 429;
+            errorCode = 'RATE_LIMITED';
+            break;
+          case 'TIMEOUT':
+          case 'NETWORK_ERROR':
+            statusCode = 503;
+            errorCode = 'SERVICE_UNAVAILABLE';
+            break;
+        }
+        
+        const errorResponse = createErrorResponse(
+          errorCode,
+          'Failed to fetch PR data from Bitbucket',
+          formatBitbucketServiceError(error)
+        );
+        
+        res.status(statusCode).json(errorResponse);
+        return;
+      }
+      
+      // Re-throw unexpected errors
+      throw error;
+    }
+    
+    // TODO: Implement OpenAI API integration to generate description from diff
+    // For now, return a more realistic placeholder response that includes actual PR data
     
     const mockDescription = `# PR Description (Generated)
 
-This is a placeholder description that will be replaced with actual OpenAI-generated content based on the PR diff.
-
-**PR URL:** ${prUrl}
+**Repository:** ${prInfo.workspace}/${prInfo.repo}
+**Pull Request:** #${prInfo.prId}
 **Generated at:** ${new Date().toISOString()}
 
-## Changes Summary
-- Placeholder for actual diff analysis
-- Will be implemented in subsequent tasks
+## Summary
+This pull request contains ${prDiff.size} bytes of changes. 
 
-## Impact
-- Placeholder for impact analysis
-- Will be generated based on actual code changes`;
+## Changes Detected
+Based on the diff analysis:
+- Total diff size: ${prDiff.size} bytes
+- Contains ${prDiff.diff.split('\n').length} lines of changes
+- ${prDiff.diff.includes('+++') ? 'Files added/modified' : 'No file additions detected'}
+- ${prDiff.diff.includes('---') ? 'Files removed/modified' : 'No file deletions detected'}
+
+## Next Steps
+- [ ] Review the changes
+- [ ] Run tests
+- [ ] Update documentation if needed
+
+*This description was generated automatically and will be enhanced with AI-powered analysis once OpenAI integration is complete.*
+
+---
+**Original PR URL:** ${prUrl}`;
 
     const successResponse = createSuccessResponse(mockDescription, prUrl);
     
