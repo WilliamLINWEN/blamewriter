@@ -15,12 +15,7 @@ export interface GenerateMVPRequest {
  * Response interface for successful generation
  */
 export interface GenerateMVPResponse {
-  success: true;
-  data: {
-    description: string;
-    prUrl: string;
-    generatedAt: string;
-  };
+  description: string;
 }
 
 /**
@@ -154,12 +149,7 @@ function createSuccessResponse(
   prUrl: string
 ): GenerateMVPResponse {
   return {
-    success: true,
-    data: {
-      description,
-      prUrl,
-      generatedAt: new Date().toISOString()
-    }
+    description
   };
 }
 
