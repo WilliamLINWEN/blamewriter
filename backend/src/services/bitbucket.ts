@@ -120,7 +120,11 @@ export class BitbucketApiClient {
         'Bitbucket access token is required and cannot be empty'
       );
     }
-
+    
+    // Optionally, you can use Basic Auth instead of Bearer token
+    // Uncomment the following lines if you want to use Basic Auth instead of Bearer token
+    // const authHeader = `Basic ${Buffer.from(`BITBUCKET_USERNAME:BITBUCKET_APP_PASSWORD`).toString('base64')}`;
+    
     // Create axios instance with default configuration
     this.axiosInstance = axios.create({
       baseURL: this.config.baseUrl,
