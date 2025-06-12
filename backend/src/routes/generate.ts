@@ -1,6 +1,7 @@
 import express from 'express';
 import { parseBitbucketPRUrl, BitbucketUrlError, formatBitbucketUrlError } from '../utils/bitbucket';
 import { createBitbucketClient, BitbucketServiceError, formatBitbucketServiceError } from '../services/bitbucket';
+import { createOpenAIClient, OpenAIServiceError, formatOpenAIServiceError } from '../services/openai';
 
 /**
  * Request interface for the generate MVP endpoint
@@ -289,36 +290,95 @@ async function handleGenerateMVP(
       throw error;
     }
     
-    // TODO: Implement OpenAI API integration to generate description from diff
-    // For now, return a more realistic placeholder response that includes actual PR data
-    
-    const mockDescription = `# PR Description (Generated)
+    // Generate PR description using OpenAI API
+    let generatedDescription: string;
+    try {
+      console.log(`🤖 Generating PR description with OpenAI...`);
+      
+      // Get OpenAI API key from environment
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        console.error('❌ OPENAI_API_KEY not found in environment variables');
+        
+        const errorResponse = createErrorResponse(
+          'MISSING_API_KEY',
+          'OpenAI API key not configured',
+          'Please set OPENAI_API_KEY in environment variables'
+        );
+        
+        res.status(500).json(errorResponse);
+        return;
+      }
+      
+      // Create OpenAI client
+      const openaiClient = createOpenAIClient(openaiApiKey);
+      
+      // Generate description
+      const result = await openaiClient.generatePRDescription(prDiff.diff, {
+        model: 'gpt-3.5-turbo',
+        maxTokens: 1000,
+        temperature: 0.7,
+        diffSizeLimit: 4000
+      });
+      
+      generatedDescription = result.description;
+      
+      console.log(`✅ OpenAI description generated successfully`);
+      console.log(`📊 Generation stats:`, {
+        model: result.model,
+        tokensUsed: result.tokensUsed,
+        diffTruncated: result.diffSizeTruncated,
+        originalSize: result.originalDiffSize,
+        processedSize: result.truncatedDiffSize
+      });
+      
+    } catch (error: unknown) {
+      if (error instanceof OpenAIServiceError) {
+        console.log('❌ OpenAI API request failed:', error.message);
+        
+        let statusCode = 500;
+        let errorCode = 'OPENAI_API_ERROR';
+        
+        // Map specific error codes to appropriate HTTP status codes
+        switch (error.code) {
+          case 'INVALID_API_KEY':
+            statusCode = 401;
+            errorCode = 'INVALID_OPENAI_KEY';
+            break;
+          case 'QUOTA_EXCEEDED':
+            statusCode = 402;
+            errorCode = 'QUOTA_EXCEEDED';
+            break;
+          case 'RATE_LIMITED':
+            statusCode = 429;
+            errorCode = 'RATE_LIMITED';
+            break;
+          case 'TOKEN_LIMIT_EXCEEDED':
+            statusCode = 413;
+            errorCode = 'CONTENT_TOO_LARGE';
+            break;
+          case 'TIMEOUT':
+          case 'NETWORK_ERROR':
+            statusCode = 503;
+            errorCode = 'SERVICE_UNAVAILABLE';
+            break;
+        }
+        
+        const errorResponse = createErrorResponse(
+          errorCode,
+          'Failed to generate PR description',
+          formatOpenAIServiceError(error)
+        );
+        
+        res.status(statusCode).json(errorResponse);
+        return;
+      }
+      
+      // Re-throw unexpected errors
+      throw error;
+    }
 
-**Repository:** ${prInfo.workspace}/${prInfo.repo}
-**Pull Request:** #${prInfo.prId}
-**Generated at:** ${new Date().toISOString()}
-
-## Summary
-This pull request contains ${prDiff.size} bytes of changes. 
-
-## Changes Detected
-Based on the diff analysis:
-- Total diff size: ${prDiff.size} bytes
-- Contains ${prDiff.diff.split('\n').length} lines of changes
-- ${prDiff.diff.includes('+++') ? 'Files added/modified' : 'No file additions detected'}
-- ${prDiff.diff.includes('---') ? 'Files removed/modified' : 'No file deletions detected'}
-
-## Next Steps
-- [ ] Review the changes
-- [ ] Run tests
-- [ ] Update documentation if needed
-
-*This description was generated automatically and will be enhanced with AI-powered analysis once OpenAI integration is complete.*
-
----
-**Original PR URL:** ${prUrl}`;
-
-    const successResponse = createSuccessResponse(mockDescription, prUrl);
+    const successResponse = createSuccessResponse(generatedDescription, prUrl);
     
     const duration = Date.now() - startTime;
     console.log(`✅ [${new Date().toISOString()}] Request completed successfully in ${duration}ms`);
