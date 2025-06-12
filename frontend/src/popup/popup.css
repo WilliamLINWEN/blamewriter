@@ -1,0 +1,29 @@
+/* Popup styles for Bitbucket PR Helper extension */
+/* This will be expanded in Phase 1 section 3.2 */
+
+body {
+    width: 350px;
+    min-height: 200px;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    background-color: #ffffff;
+}
+
+.container {
+    padding: 16px;
+}
+
+h1 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333333;
+}
+
+p {
+    margin: 0;
+    color: #666666;
+    line-height: 1.4;
+}
