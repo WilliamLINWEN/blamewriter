@@ -24,9 +24,9 @@
     "type-check:workspaces": "npm run type-check --workspaces"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "@types/node": "^20.0.0",
     "concurrently": "^8.2.0",
     "eslint": "^8.45.0",
     "eslint-config-prettier": "^8.8.0",
@@ -52,5 +52,8 @@
     "openai"
   ],
   "author": "Your Name",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "rimraf": "^6.0.1"
+  }
 }
