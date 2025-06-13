@@ -14,13 +14,19 @@ if (bitbucketPrRegex.test(currentUrl)) {
 
   if (match && match.groups) {
     const { workspace, repoSlug, prId } = match.groups;
-    console.log("Workspace:", workspace);
-    console.log("Repository Slug:", repoSlug);
-    console.log("Pull Request ID:", prId);
+    
+    // Ensure all required fields are present
+    if (workspace && repoSlug && prId) {
+      console.log("Workspace:", workspace);
+      console.log("Repository Slug:", repoSlug);
+      console.log("Pull Request ID:", prId);
 
-    // Prepare prInfo object for potential UI injection
-    const prInfo = { workspace, repoSlug, prId };
-    injectCustomUI(prInfo);
+      // Prepare prInfo object for potential UI injection
+      const prInfo = { workspace, repoSlug, prId };
+      injectCustomUI(prInfo);
+    } else {
+      console.error("Could not extract all required PR information from URL.");
+    }
   } else {
     console.error("Could not parse PR information from URL.");
   }
