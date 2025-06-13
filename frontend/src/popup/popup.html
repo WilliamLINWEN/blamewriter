@@ -8,9 +8,51 @@
 </head>
 <body>
     <div class="container">
-        <h1>Bitbucket PR Helper (MVP)</h1>
-        <p>Extension popup placeholder - will be implemented in Phase 1 section 3.2</p>
+        <div class="header">
+            <h1>Bitbucket PR Helper</h1>
+            <p class="subtitle">Generate AI-powered PR descriptions</p>
+        </div>
+        
+        <div class="form-section">
+            <div class="input-group">
+                <label for="bitbucket-token">Bitbucket OAuth Token:</label>
+                <input 
+                    type="password" 
+                    id="bitbucket-token" 
+                    placeholder="Paste your Bitbucket OAuth token here..."
+                    class="token-input"
+                >
+                <small class="input-hint">Required for accessing your PR data</small>
+            </div>
+            
+            <button id="generate-btn" class="generate-button" disabled>
+                <span class="btn-text">Generate Description</span>
+                <div class="loading-spinner" style="display: none;"></div>
+            </button>
+        </div>
+        
+        <div class="result-section">
+            <label for="result-textarea">Generated Description:</label>
+            <textarea 
+                id="result-textarea" 
+                placeholder="Generated PR description will appear here..."
+                readonly
+                class="result-textarea"
+            ></textarea>
+            
+            <div class="action-buttons" style="display: none;">
+                <button id="copy-btn" class="action-button secondary">
+                    Copy to Clipboard
+                </button>
+                <button id="fill-btn" class="action-button primary">
+                    Fill into Page
+                </button>
+            </div>
+        </div>
+        
+        <div class="status-message" id="status-message"></div>
     </div>
+    
     <script src="popup.js"></script>
 </body>
 </html>

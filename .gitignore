@@ -171,6 +171,7 @@ frontend/build/
 web-store-assets/
 
 # IDE and Editor files
+.history/
 .vscode/
 .idea/
 *.swp
