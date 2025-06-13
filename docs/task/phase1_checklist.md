@@ -35,19 +35,19 @@ concept feasibility.
 ### 1.3 Backend Project Initialization
 
 - [v] Initialize Node.js project in [`backend/`](backend/) directory using
-      `npm init`
+  `npm init`
 - [v] Install core dependencies: [`express`](backend/package.json),
-      [`axios`](backend/package.json), [`openai`](backend/package.json),
-      [`dotenv`](backend/package.json)
+  [`axios`](backend/package.json), [`openai`](backend/package.json),
+  [`dotenv`](backend/package.json)
 - [v] Install development dependencies: [`typescript`](backend/package.json),
-      [`@types/node`](backend/package.json),
-      [`@types/express`](backend/package.json),
-      [`nodemon`](backend/package.json), [`ts-node`](backend/package.json)
+  [`@types/node`](backend/package.json),
+  [`@types/express`](backend/package.json), [`nodemon`](backend/package.json),
+  [`ts-node`](backend/package.json)
 - [v] Create [`tsconfig.json`](backend/tsconfig.json) for TypeScript
-      configuration
+  configuration
 - [v] Set up [`backend/.env.example`](backend/.env.example) template file
 - [v] Create [`backend/.env`](backend/.env) file for local development (add to
-      .gitignore)
+  .gitignore)
 
 ### 1.4 Frontend Extension Project Initialization
 
@@ -63,17 +63,17 @@ concept feasibility.
 ### 2.1 Core Backend Structure
 
 - [v] Create main application file
-      [`backend/src/index.ts`](backend/src/index.ts)
+  [`backend/src/index.ts`](backend/src/index.ts)
 - [v] Set up Express server with CORS configuration for extension communication
 - [v] Implement environment variable loading using
-      [`dotenv`](backend/src/index.ts)
+  [`dotenv`](backend/src/index.ts)
 - [v] Configure server to listen on port 3001 for development
 - [v] Add basic error handling middleware
 
 ### 2.2 Environment Variables Management
 
 - [v] Define [`BITBUCKET_APP_SECRET`](backend/.env.example) in environment
-      template
+  template
 - [v] Define [`OPENAI_API_KEY`](backend/.env.example) in environment template
 - [v] Add [`PORT`](backend/.env.example) configuration variable
 - [v] Implement environment validation to ensure required variables are present
@@ -81,46 +81,46 @@ concept feasibility.
 ### 2.3 API Endpoint Implementation
 
 - [v] Create [`POST /api/v1/generate-mvp`](backend/src/routes/generate.ts)
-      endpoint
+  endpoint
 - [v] Implement request body validation for
-      [`prUrl`](backend/src/routes/generate.ts) and
-      [`bitbucketToken`](backend/src/routes/generate.ts) fields
+  [`prUrl`](backend/src/routes/generate.ts) and
+  [`bitbucketToken`](backend/src/routes/generate.ts) fields
 - [v] Add request/response logging for debugging
 - [v] Implement proper HTTP status codes and error responses
 
 ### 2.4 Bitbucket API Integration
 
 - [v] Create utility function to parse PR URL and extract
-      [`workspace`](backend/src/utils/bitbucket.ts),
-      [`repo`](backend/src/utils/bitbucket.ts), and
-      [`prId`](backend/src/utils/bitbucket.ts)
+  [`workspace`](backend/src/utils/bitbucket.ts),
+  [`repo`](backend/src/utils/bitbucket.ts), and
+  [`prId`](backend/src/utils/bitbucket.ts)
 - [v] Implement Bitbucket API client using
-      [`axios`](backend/src/services/bitbucket.ts)
+  [`axios`](backend/src/services/bitbucket.ts)
 - [v] Create function to fetch PR diff using
-      [`/2.0/repositories/{workspace}/{repo}/pullrequests/{prId}/diff`](backend/src/services/bitbucket.ts)
-      endpoint
+  [`/2.0/repositories/{workspace}/{repo}/pullrequests/{prId}/diff`](backend/src/services/bitbucket.ts)
+  endpoint
 - [v] Add Bearer token authentication for Bitbucket API requests
 - [v] Implement error handling for Bitbucket API failures (401, 404, rate
-      limits)
+  limits)
 
 ### 2.5 OpenAI API Integration
 
 - [v] Set up OpenAI client with API key from environment variables
 - [v] Create function to generate PR description using
-      [`openai`](backend/src/services/openai.ts) library
+  [`openai`](backend/src/services/openai.ts) library
 - [v] Implement hardcoded prompt template:
-      "請根據以下 diff 為這個 PR 撰寫描述..."
+  "請根據以下 diff 為這個 PR 撰寫描述..."
 - [v] Add diff content truncation (limit to 4000 characters) to prevent token
-      limits
+  limits
 - [v] Configure OpenAI model parameters (model: gpt-3.5-turbo or gpt-4)
 - [v] Implement error handling for OpenAI API failures
 
 ### 2.6 Core Business Logic
 
 - [v] Create main handler function in
-      [`/api/v1/generate-mvp`](backend/src/routes/generate.ts) endpoint
+  [`/api/v1/generate-mvp`](backend/src/routes/generate.ts) endpoint
 - [v] Implement workflow: Parse URL → Fetch diff → Generate description → Return
-      response
+  response
 - [v] Add comprehensive error handling and logging throughout the pipeline
 - [v] Implement response formatting to match expected JSON structure
 - [v] Add request timeout handling for external API calls
@@ -128,9 +128,9 @@ concept feasibility.
 ### 2.7 Development and Testing Setup
 
 - [v] Create [`npm run dev`](backend/package.json) script using
-      [`nodemon`](backend/package.json) for development
+  [`nodemon`](backend/package.json) for development
 - [v] Create [`npm run build`](backend/package.json) script for TypeScript
-      compilation
+  compilation
 - [v] Set up basic health check endpoint [`GET /health`](backend/src/index.ts)
 - [v] Test backend API using curl or Postman with sample data
 - [v] Verify Bitbucket API integration with real PR URLs
@@ -142,16 +142,16 @@ concept feasibility.
 ### 3.1 Manifest v3 Configuration
 
 - [v] Create [`frontend/manifest.json`](frontend/manifest.json) with
-      manifest_version 3
+  manifest_version 3
 - [v] Set extension name: "Bitbucket PR Helper (MVP)"
 - [v] Set version: "0.1.0"
 - [v] Configure permissions: [`"activeTab"`](frontend/manifest.json)
 - [v] Add host_permissions:
-      [`"http://localhost:3001/*"`](frontend/manifest.json) for development
+  [`"http://localhost:3001/*"`](frontend/manifest.json) for development
 - [v] Configure action with
-      [`default_popup: "popup.html"`](frontend/manifest.json)
+  [`default_popup: "popup.html"`](frontend/manifest.json)
 - [v] Set up service worker:
-      [`"service_worker": "background.js"`](frontend/manifest.json)
+  [`"service_worker": "background.js"`](frontend/manifest.json)
 
 ### 3.2 Popup UI Development
 
@@ -168,11 +168,11 @@ concept feasibility.
 - [v] Create [`frontend/popup.js`](frontend/popup.js) (or TypeScript equivalent)
 - [v] Implement button click event handler
 - [v] Add function to get current tab URL using
-      [`chrome.tabs.query`](frontend/popup.js)
+  [`chrome.tabs.query`](frontend/popup.js)
 - [v] Validate that current page is a Bitbucket PR page
 - [v] Read token value from input field with validation
 - [v] Send message to background script using
-      [`chrome.runtime.sendMessage`](frontend/popup.js)
+  [`chrome.runtime.sendMessage`](frontend/popup.js)
 - [v] Handle response from background script and display results
 - [v] Implement error handling and user feedback
 
@@ -180,12 +180,12 @@ concept feasibility.
 
 - [v] Create [`frontend/background.js`](frontend/background.js) service worker
 - [v] Implement [`chrome.runtime.onMessage.addListener`](frontend/background.js)
-      for popup communication
+  for popup communication
 - [v] Create function to make HTTP request to backend API endpoint
 - [v] Use [`fetch`](frontend/background.js) API to call
-      [`http://localhost:3001/api/v1/generate-mvp`](frontend/background.js)
+  [`http://localhost:3001/api/v1/generate-mvp`](frontend/background.js)
 - [v] Implement proper request headers:
-      [`Content-Type: application/json`](frontend/background.js)
+  [`Content-Type: application/json`](frontend/background.js)
 - [v] Handle API response and error cases
 - [v] Send response back to popup using [`sendResponse`](frontend/background.js)
 - [v] Add logging for debugging purposes
@@ -195,11 +195,11 @@ concept feasibility.
 - [v] Set up build process to compile TypeScript to JavaScript
 - [v] Create [`frontend/dist/`](frontend/dist/) directory for built extension
 - [v] Configure build to copy [`manifest.json`](frontend/dist/manifest.json),
-      [`popup.html`](frontend/dist/popup.html), and assets
+  [`popup.html`](frontend/dist/popup.html), and assets
 - [v] Create [`npm run build`](frontend/package.json) script for production
-      build
+  build
 - [v] Create [`npm run dev`](frontend/package.json) script for development with
-      watch mode
+  watch mode
 - [v] Test extension loading in Chrome developer mode
 
 ### 3.6 Content Script Preparation (Basic)

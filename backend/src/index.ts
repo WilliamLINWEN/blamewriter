@@ -15,12 +15,14 @@ const app = express();
 const PORT = envConfig.PORT;
 
 // CORS configuration for extension communication
-app.use(cors({
-  origin: ['chrome-extension://*', 'moz-extension://*', 'http://localhost:*'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: ['chrome-extension://*', 'moz-extension://*', 'http://localhost:*'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 
 // JSON body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -43,7 +45,7 @@ app.get('/health', (req, res) => {
     version: '1.0.0',
     environment: envConfig.NODE_ENV,
     port: envConfig.PORT,
-    environmentValidated: true
+    environmentValidated: true,
   });
 });
 
@@ -53,14 +55,14 @@ app.use('/api/v1', generateRouter);
 // Basic error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error occurred:', err);
-  
+
   // Don't expose internal error details in production
   const isDevelopment = envConfig.NODE_ENV !== 'production';
-  
+
   res.status(500).json({
     error: 'Internal Server Error',
     message: isDevelopment ? err.message : 'Something went wrong',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -69,7 +71,7 @@ app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Not Found',
     message: `Route ${req.method} ${req.originalUrl} not found`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

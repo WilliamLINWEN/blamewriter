@@ -1,6 +1,6 @@
 /**
  * Environment Variables Validation Utility
- * 
+ *
  * This module provides functions to validate that all required environment
  * variables are present and properly configured before the server starts.
  */
@@ -25,7 +25,7 @@ const REQUIRED_ENV_VARS = {
   PORT: 'Server port configuration',
   NODE_ENV: 'Environment mode (development/production)',
   BITBUCKET_APP_SECRET: 'Bitbucket API authentication secret',
-  OPENAI_API_KEY: 'OpenAI API access key'
+  OPENAI_API_KEY: 'OpenAI API access key',
 } as const;
 
 /**
@@ -39,13 +39,15 @@ export function validateEnvironmentVariables(): ValidationResult {
   // Check each required environment variable
   for (const [varName, description] of Object.entries(REQUIRED_ENV_VARS)) {
     const value = process.env[varName];
-    
+
     if (!value) {
       errors.push(`❌ ${varName} is not set (${description})`);
     } else if (value.trim() === '') {
       errors.push(`❌ ${varName} is empty (${description})`);
     } else if (isPlaceholderValue(value)) {
-      errors.push(`❌ ${varName} contains placeholder value - please set a real value (${description})`);
+      errors.push(
+        `❌ ${varName} contains placeholder value - please set a real value (${description})`,
+      );
     } else {
       config[varName as keyof EnvironmentConfig] = value;
     }
@@ -57,7 +59,9 @@ export function validateEnvironmentVariables(): ValidationResult {
   }
 
   if (config.NODE_ENV && !isValidNodeEnv(config.NODE_ENV)) {
-    errors.push(`❌ NODE_ENV must be 'development', 'production', or 'test', got: ${config.NODE_ENV}`);
+    errors.push(
+      `❌ NODE_ENV must be 'development', 'production', or 'test', got: ${config.NODE_ENV}`,
+    );
   }
 
   if (config.OPENAI_API_KEY && !isValidOpenAIKey(config.OPENAI_API_KEY)) {
@@ -67,7 +71,7 @@ export function validateEnvironmentVariables(): ValidationResult {
   return {
     isValid: errors.length === 0,
     errors,
-    config: errors.length === 0 ? config as EnvironmentConfig : undefined
+    config: errors.length === 0 ? (config as EnvironmentConfig) : undefined,
   };
 }
 
@@ -80,9 +84,9 @@ function isPlaceholderValue(value: string): boolean {
     /replace_this/i,
     /change_me/i,
     /placeholder/i,
-    /example/i
+    /example/i,
   ];
-  
+
   return placeholderPatterns.some(pattern => pattern.test(value));
 }
 
@@ -117,8 +121,12 @@ export function printValidationResults(result: ValidationResult): void {
     console.log(`📊 Configuration loaded:`);
     console.log(`   - PORT: ${result.config?.PORT}`);
     console.log(`   - NODE_ENV: ${result.config?.NODE_ENV}`);
-    console.log(`   - BITBUCKET_APP_SECRET: ${result.config?.BITBUCKET_APP_SECRET ? '***configured***' : 'not set'}`);
-    console.log(`   - OPENAI_API_KEY: ${result.config?.OPENAI_API_KEY ? '***configured***' : 'not set'}`);
+    console.log(
+      `   - BITBUCKET_APP_SECRET: ${result.config?.BITBUCKET_APP_SECRET ? '***configured***' : 'not set'}`,
+    );
+    console.log(
+      `   - OPENAI_API_KEY: ${result.config?.OPENAI_API_KEY ? '***configured***' : 'not set'}`,
+    );
   } else {
     console.error('❌ Environment validation failed:');
     result.errors.forEach(error => console.error(`   ${error}`));
@@ -133,13 +141,13 @@ export function printValidationResults(result: ValidationResult): void {
  */
 export function validateEnvironmentOrExit(): EnvironmentConfig {
   const result = validateEnvironmentVariables();
-  
+
   printValidationResults(result);
-  
+
   if (!result.isValid) {
     console.error('\n🚨 Server cannot start with invalid environment configuration');
     process.exit(1);
   }
-  
+
   return result.config!;
 }

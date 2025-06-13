@@ -9,51 +9,51 @@ module.exports = (env, argv) => {
     entry: {
       popup: './src/popup/popup.ts',
       background: './src/background/background.ts',
-      content: './src/content/content.ts'
+      content: './src/content/content.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: '[name].js',
-      clean: true
+      clean: true,
     },
     module: {
       rules: [
         {
           test: /\.ts$/,
           use: 'ts-loader',
-          exclude: /node_modules/
+          exclude: /node_modules/,
         },
         {
           test: /\.css$/,
-          use: [MiniCssExtractPlugin.loader, 'css-loader']
-        }
-      ]
+          use: [MiniCssExtractPlugin.loader, 'css-loader'],
+        },
+      ],
     },
     resolve: {
-      extensions: ['.ts', '.js']
+      extensions: ['.ts', '.js'],
     },
     plugins: [
       new MiniCssExtractPlugin({
-        filename: '[name].css'
+        filename: '[name].css',
       }),
       new CopyWebpackPlugin({
         patterns: [
           {
             from: 'src/manifest.json',
-            to: 'manifest.json'
+            to: 'manifest.json',
           },
           {
             from: 'src/popup/popup.html',
-            to: 'popup.html'
+            to: 'popup.html',
           },
           {
             from: 'src/popup/popup.css',
-            to: 'popup.css'
-          }
-        ]
-      })
+            to: 'popup.css',
+          },
+        ],
+      }),
     ],
     devtool: isProduction ? false : 'source-map',
-    mode: argv.mode || 'development'
+    mode: argv.mode || 'development',
   };
 };

@@ -34,11 +34,15 @@ class BackgroundService {
 
   private setupMessageListener(): void {
     chrome.runtime.onMessage.addListener(
-      (request: GenerateRequest, sender: chrome.runtime.MessageSender, sendResponse: (response: GenerateResponse) => void) => {
+      (
+        request: GenerateRequest,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response: GenerateResponse) => void,
+      ) => {
         this.handleMessage(request, sender, sendResponse);
         // Return true to indicate we will send a response asynchronously
         return true;
-      }
+      },
     );
   }
 
@@ -51,7 +55,7 @@ class BackgroundService {
   private async handleMessage(
     request: GenerateRequest,
     sender: chrome.runtime.MessageSender,
-    sendResponse: (response: GenerateResponse) => void
+    sendResponse: (response: GenerateResponse) => void,
   ): Promise<void> {
     console.log('Received message:', request);
 
@@ -113,7 +117,7 @@ class BackgroundService {
   private async callBackendAPI(prUrl: string, bitbucketToken: string): Promise<Response> {
     const requestBody: ApiRequestBody = {
       prUrl: prUrl,
-      bitbucketToken: bitbucketToken
+      bitbucketToken: bitbucketToken,
     };
 
     console.log('Making API request to:', `${this.API_BASE_URL}${this.GENERATE_ENDPOINT}`);
@@ -128,10 +132,10 @@ class BackgroundService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         body: JSON.stringify(requestBody),
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
@@ -214,7 +218,10 @@ class BackgroundService {
       }
 
       if (error.message.includes('fetch')) {
-        return { error: 'Network error. Please check your connection and ensure the backend server is running.' };
+        return {
+          error:
+            'Network error. Please check your connection and ensure the backend server is running.',
+        };
       }
 
       if (error.message.includes('CORS')) {
@@ -223,7 +230,10 @@ class BackgroundService {
 
       // Check for connection errors
       if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION')) {
-        return { error: 'Cannot connect to server. Please ensure the backend is running on http://localhost:3001' };
+        return {
+          error:
+            'Cannot connect to server. Please ensure the backend is running on http://localhost:3001',
+        };
       }
 
       return { error: `Request failed: ${error.message}` };

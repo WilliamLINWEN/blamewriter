@@ -85,7 +85,7 @@ class PopupController {
     }
 
     // Enter key support for token input
-    this.tokenInput.addEventListener('keypress', (e) => {
+    this.tokenInput.addEventListener('keypress', e => {
       if (e.key === 'Enter' && !this.generateButton.disabled) {
         this.handleGenerateClick();
       }
@@ -95,7 +95,7 @@ class PopupController {
   private initializeState(): void {
     // Check current page on popup open
     this.checkCurrentPage();
-    
+
     // Initialize UI state
     this.validateTokenInput();
     this.hideActionButtons();
@@ -106,7 +106,7 @@ class PopupController {
     try {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
-      
+
       if (!currentTab || !currentTab.url) {
         this.showError('Unable to access current page. Please refresh and try again.');
         return;
@@ -122,7 +122,9 @@ class PopupController {
       this.showInfo(`Detected PR: ${prInfo.workspace}/${prInfo.repo}#${prInfo.prId}`);
     } catch (error) {
       console.error('Error checking current page:', error);
-      this.showError('Unable to access current page. Please ensure you have the required permissions.');
+      this.showError(
+        'Unable to access current page. Please ensure you have the required permissions.',
+      );
     }
   }
 
@@ -130,7 +132,7 @@ class PopupController {
     // Bitbucket PR URL pattern: https://bitbucket.org/workspace/repo/pull-requests/123
     const prUrlPattern = /^https:\/\/bitbucket\.org\/([^\/]+)\/([^\/]+)\/pull-requests\/(\d+)/;
     const match = url.match(prUrlPattern);
-    
+
     if (!match) {
       return null;
     }
@@ -139,17 +141,17 @@ class PopupController {
       workspace: match[1]!,
       repo: match[2]!,
       prId: match[3]!,
-      fullUrl: url
+      fullUrl: url,
     };
   }
 
   private validateTokenInput(): void {
     const tokenValue = this.tokenInput.value.trim();
     const isValid = this.isValidToken(tokenValue);
-    
+
     // Enable/disable generate button based on token validity
     this.generateButton.disabled = !isValid;
-    
+
     // Update input styling based on validity
     if (tokenValue.length > 0) {
       if (isValid) {
@@ -171,7 +173,7 @@ class PopupController {
     if (!token || token.length < 20) {
       return false;
     }
-    
+
     // Check for common token patterns
     const tokenPattern = /^[a-zA-Z0-9_-]+$/;
     return tokenPattern.test(token);
@@ -188,7 +190,7 @@ class PopupController {
       // Get current tab URL
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
-      
+
       if (!currentTab || !currentTab.url) {
         this.showError('Unable to access current page');
         return;
@@ -209,12 +211,11 @@ class PopupController {
       const request: GenerateRequest = {
         action: 'generate',
         url: currentTab.url,
-        token: tokenValue
+        token: tokenValue,
       };
 
       const response = await this.sendMessageToBackground(request);
       this.handleGenerateResponse(response);
-
     } catch (error) {
       console.error('Error in generate click handler:', error);
       this.showError('An unexpected error occurred. Please try again.');
@@ -224,7 +225,7 @@ class PopupController {
   }
 
   private sendMessageToBackground(request: GenerateRequest): Promise<GenerateResponse> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       chrome.runtime.sendMessage(request, (response: GenerateResponse) => {
         // Handle potential errors in message passing
         if (chrome.runtime.lastError) {
@@ -283,7 +284,7 @@ class PopupController {
       // This would be implemented in future phases with content script integration
       // For now, just show a message
       this.showInfo('Fill into page functionality will be implemented in Phase 2');
-      
+
       // Also copy to clipboard as a fallback
       await this.copyToClipboard();
     } catch (error) {

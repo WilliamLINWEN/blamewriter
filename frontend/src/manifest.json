@@ -3,12 +3,8 @@
   "name": "Bitbucket PR Helper (MVP)",
   "version": "0.1.0",
   "description": "Automatically generates PR descriptions for Bitbucket using AI",
-  "permissions": [
-    "activeTab"
-  ],
-  "host_permissions": [
-    "http://localhost:3001/*"
-  ],
+  "permissions": ["activeTab"],
+  "host_permissions": ["http://localhost:3001/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Bitbucket PR Helper"

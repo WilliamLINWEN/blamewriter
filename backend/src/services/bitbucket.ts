@@ -62,7 +62,7 @@ export enum BitbucketApiErrorCode {
   NETWORK_ERROR = 'NETWORK_ERROR',
   TIMEOUT = 'TIMEOUT',
   INVALID_RESPONSE = 'INVALID_RESPONSE',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
 
 /**
@@ -73,7 +73,7 @@ export class BitbucketServiceError extends Error {
     public code: BitbucketApiErrorCode,
     message: string,
     public statusCode?: number,
-    public originalError?: Error
+    public originalError?: Error,
   ) {
     super(message);
     this.name = 'BitbucketServiceError';
@@ -97,7 +97,7 @@ const DEFAULT_CONFIG: Required<BitbucketClientConfig> = {
   baseUrl: 'https://api.bitbucket.org/2.0',
   timeout: 30000, // 30 seconds
   maxRetries: 3,
-  retryDelay: 1000 // 1 second
+  retryDelay: 1000, // 1 second
 };
 
 /**
@@ -109,31 +109,31 @@ export class BitbucketApiClient {
 
   constructor(
     private readonly accessToken: string,
-    clientConfig: BitbucketClientConfig = {}
+    clientConfig: BitbucketClientConfig = {},
   ) {
     this.config = { ...DEFAULT_CONFIG, ...clientConfig };
-    
+
     // Validate access token
     if (!accessToken || typeof accessToken !== 'string' || accessToken.trim() === '') {
       throw new BitbucketServiceError(
         BitbucketApiErrorCode.UNAUTHORIZED,
-        'Bitbucket access token is required and cannot be empty'
+        'Bitbucket access token is required and cannot be empty',
       );
     }
-    
+
     // Optionally, you can use Basic Auth instead of Bearer token
     // Uncomment the following lines if you want to use Basic Auth instead of Bearer token
     // const authHeader = `Basic ${Buffer.from(`BITBUCKET_USERNAME:BITBUCKET_APP_PASSWORD`).toString('base64')}`;
-    
+
     // Create axios instance with default configuration
     this.axiosInstance = axios.create({
       baseURL: this.config.baseUrl,
       timeout: this.config.timeout,
       headers: {
-        'Authorization': `Bearer ${accessToken.trim()}`,
-        'Accept': 'application/json',
-        'User-Agent': 'Bitbucket-PR-Helper/1.0.0'
-      }
+        Authorization: `Bearer ${accessToken.trim()}`,
+        Accept: 'application/json',
+        'User-Agent': 'Bitbucket-PR-Helper/1.0.0',
+      },
     });
 
     // Add request/response interceptors for logging and error handling
@@ -146,28 +146,32 @@ export class BitbucketApiClient {
   private setupInterceptors(): void {
     // Request interceptor for logging
     this.axiosInstance.interceptors.request.use(
-      (config) => {
+      config => {
         console.log(`🌐 [Bitbucket API] ${config.method?.toUpperCase()} ${config.url}`);
-        console.log(`🔑 [Bitbucket API] Using Bearer token: ${this.accessToken.substring(0, 8)}...`);
+        console.log(
+          `🔑 [Bitbucket API] Using Bearer token: ${this.accessToken.substring(0, 8)}...`,
+        );
         return config;
       },
-      (error) => {
+      error => {
         console.error('❌ [Bitbucket API] Request setup failed:', error);
         return Promise.reject(error);
-      }
+      },
     );
 
     // Response interceptor for logging and error handling
     this.axiosInstance.interceptors.response.use(
-      (response) => {
+      response => {
         console.log(`✅ [Bitbucket API] ${response.status} ${response.config.url}`);
-        console.log(`📊 [Bitbucket API] Response size: ${JSON.stringify(response.data).length} bytes`);
+        console.log(
+          `📊 [Bitbucket API] Response size: ${JSON.stringify(response.data).length} bytes`,
+        );
         return response;
       },
-      (error) => {
+      error => {
         this.logResponseError(error);
         return Promise.reject(this.transformAxiosError(error));
-      }
+      },
     );
   }
 
@@ -199,7 +203,7 @@ export class BitbucketApiClient {
             BitbucketApiErrorCode.UNAUTHORIZED,
             'Invalid or expired Bitbucket access token. Please check your token and try again.',
             statusCode,
-            error
+            error,
           );
 
         case 403:
@@ -207,7 +211,7 @@ export class BitbucketApiClient {
             BitbucketApiErrorCode.FORBIDDEN,
             'Access denied. You may not have permission to access this repository or pull request.',
             statusCode,
-            error
+            error,
           );
 
         case 404:
@@ -215,7 +219,7 @@ export class BitbucketApiClient {
             BitbucketApiErrorCode.NOT_FOUND,
             'Repository or pull request not found. Please check the URL and ensure it exists.',
             statusCode,
-            error
+            error,
           );
 
         case 429:
@@ -223,7 +227,7 @@ export class BitbucketApiClient {
             BitbucketApiErrorCode.RATE_LIMITED,
             'Rate limit exceeded. Please wait a moment before trying again.',
             statusCode,
-            error
+            error,
           );
 
         default:
@@ -232,7 +236,7 @@ export class BitbucketApiClient {
             BitbucketApiErrorCode.UNKNOWN_ERROR,
             message,
             statusCode,
-            error
+            error,
           );
       }
     } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
@@ -240,32 +244,32 @@ export class BitbucketApiClient {
         BitbucketApiErrorCode.TIMEOUT,
         'Request timed out. The Bitbucket API may be slow or unavailable.',
         undefined,
-        error
+        error,
       );
     } else if (error.request) {
       return new BitbucketServiceError(
         BitbucketApiErrorCode.NETWORK_ERROR,
         'Network error occurred. Please check your internet connection.',
         undefined,
-        error
+        error,
       );
     } else {
       return new BitbucketServiceError(
         BitbucketApiErrorCode.UNKNOWN_ERROR,
         `Unexpected error: ${error.message}`,
         undefined,
-        error
+        error,
       );
     }
   }
 
   /**
    * Fetches the diff for a specific pull request
-   * 
+   *
    * @param prInfo - Parsed PR information containing workspace, repo, and PR ID
    * @returns Promise that resolves to the PR diff data
    * @throws BitbucketServiceError for API failures
-   * 
+   *
    * @example
    * ```typescript
    * const client = new BitbucketApiClient('your-access-token');
@@ -280,47 +284,46 @@ export class BitbucketApiClient {
 
     try {
       console.log(`🔍 [Bitbucket API] Fetching PR diff for ${workspace}/${repo}#${prId}`);
-      
+
       const response: AxiosResponse<string> = await this.axiosInstance.get(endpoint, {
         headers: {
-          'Accept': 'text/plain' // Request diff as plain text
-        }
+          Accept: 'text/plain', // Request diff as plain text
+        },
       });
 
       const diffContent = response.data;
       const size = Buffer.byteLength(diffContent, 'utf8');
-      
+
       console.log(`📄 [Bitbucket API] Diff fetched successfully, size: ${size} bytes`);
 
       return {
         diff: diffContent,
         size,
-        truncated: false // Bitbucket API doesn't indicate truncation in this endpoint
+        truncated: false, // Bitbucket API doesn't indicate truncation in this endpoint
       };
-
     } catch (error) {
       if (error instanceof BitbucketServiceError) {
         throw error;
       }
-      
+
       // This shouldn't happen due to interceptors, but handle just in case
       console.error(`❌ [Bitbucket API] Unexpected error fetching diff:`, error);
       throw new BitbucketServiceError(
         BitbucketApiErrorCode.UNKNOWN_ERROR,
         `Failed to fetch PR diff: ${error instanceof Error ? error.message : 'Unknown error'}`,
         undefined,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
     }
   }
 
   /**
    * Fetches basic information about a pull request
-   * 
+   *
    * @param prInfo - Parsed PR information containing workspace, repo, and PR ID
    * @returns Promise that resolves to the PR information
    * @throws BitbucketServiceError for API failures
-   * 
+   *
    * @example
    * ```typescript
    * const client = new BitbucketApiClient('your-access-token');
@@ -335,56 +338,56 @@ export class BitbucketApiClient {
 
     try {
       console.log(`🔍 [Bitbucket API] Fetching PR info for ${workspace}/${repo}#${prId}`);
-      
+
       const response: AxiosResponse<BitbucketPRInfo> = await this.axiosInstance.get(endpoint);
-      
+
       console.log(`📄 [Bitbucket API] PR info fetched successfully: "${response.data.title}"`);
 
       return response.data;
-
     } catch (error) {
       if (error instanceof BitbucketServiceError) {
         throw error;
       }
-      
+
       console.error(`❌ [Bitbucket API] Unexpected error fetching PR info:`, error);
       throw new BitbucketServiceError(
         BitbucketApiErrorCode.UNKNOWN_ERROR,
         `Failed to fetch PR info: ${error instanceof Error ? error.message : 'Unknown error'}`,
         undefined,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
     }
   }
 
   /**
    * Tests the connection to Bitbucket API with the current token
-   * 
+   *
    * @returns Promise that resolves to true if connection is successful
    * @throws BitbucketServiceError for API failures
    */
   async testConnection(): Promise<boolean> {
     try {
       console.log(`🔍 [Bitbucket API] Testing connection with current token`);
-      
+
       // Use the user endpoint to test authentication
       const response = await this.axiosInstance.get('/user');
-      
-      console.log(`✅ [Bitbucket API] Connection test successful for user: ${response.data.display_name}`);
-      return true;
 
+      console.log(
+        `✅ [Bitbucket API] Connection test successful for user: ${response.data.display_name}`,
+      );
+      return true;
     } catch (error) {
       console.error(`❌ [Bitbucket API] Connection test failed:`, error);
-      
+
       if (error instanceof BitbucketServiceError) {
         throw error;
       }
-      
+
       throw new BitbucketServiceError(
         BitbucketApiErrorCode.UNKNOWN_ERROR,
         `Connection test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         undefined,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
     }
   }
@@ -392,7 +395,7 @@ export class BitbucketApiClient {
 
 /**
  * Gets a user-friendly error message from a BitbucketServiceError
- * 
+ *
  * @param error - The error to format
  * @returns User-friendly error message
  */
@@ -400,25 +403,25 @@ export function formatBitbucketServiceError(error: BitbucketServiceError): strin
   switch (error.code) {
     case BitbucketApiErrorCode.UNAUTHORIZED:
       return 'Authentication failed. Please check your Bitbucket access token.';
-    
+
     case BitbucketApiErrorCode.FORBIDDEN:
       return 'Access denied. You may not have permission to access this repository.';
-    
+
     case BitbucketApiErrorCode.NOT_FOUND:
       return 'Repository or pull request not found. Please check the URL.';
-    
+
     case BitbucketApiErrorCode.RATE_LIMITED:
       return 'Too many requests. Please wait a moment before trying again.';
-    
+
     case BitbucketApiErrorCode.NETWORK_ERROR:
       return 'Network error. Please check your internet connection.';
-    
+
     case BitbucketApiErrorCode.TIMEOUT:
       return 'Request timed out. Please try again.';
-    
+
     case BitbucketApiErrorCode.INVALID_RESPONSE:
       return 'Invalid response from Bitbucket API. Please try again.';
-    
+
     default:
       return error.message || 'An unexpected error occurred while communicating with Bitbucket.';
   }
@@ -426,11 +429,11 @@ export function formatBitbucketServiceError(error: BitbucketServiceError): strin
 
 /**
  * Factory function to create a Bitbucket API client
- * 
+ *
  * @param accessToken - Bitbucket access token
  * @param config - Optional client configuration
  * @returns Configured BitbucketApiClient instance
- * 
+ *
  * @example
  * ```typescript
  * const client = createBitbucketClient('your-access-token', {
@@ -441,7 +444,7 @@ export function formatBitbucketServiceError(error: BitbucketServiceError): strin
  */
 export function createBitbucketClient(
   accessToken: string,
-  config?: BitbucketClientConfig
+  config?: BitbucketClientConfig,
 ): BitbucketApiClient {
   return new BitbucketApiClient(accessToken, config);
 }

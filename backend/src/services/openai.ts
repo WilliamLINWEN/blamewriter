@@ -48,7 +48,7 @@ export enum OpenAIErrorCode {
   NETWORK_ERROR = 'NETWORK_ERROR',
   TIMEOUT = 'TIMEOUT',
   INVALID_REQUEST = 'INVALID_REQUEST',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
 
 /**
@@ -59,7 +59,7 @@ export class OpenAIServiceError extends Error {
     public code: OpenAIErrorCode,
     message: string,
     public statusCode?: number,
-    public originalError?: Error
+    public originalError?: Error,
   ) {
     super(message);
     this.name = 'OpenAIServiceError';
@@ -71,7 +71,7 @@ export class OpenAIServiceError extends Error {
  */
 const DEFAULT_CONFIG: Required<Omit<OpenAIClientConfig, 'apiKey'>> = {
   timeout: 60000, // 60 seconds
-  maxRetries: 3
+  maxRetries: 3,
 };
 
 /**
@@ -81,7 +81,7 @@ const DEFAULT_GENERATION_OPTIONS: Required<GenerateDescriptionOptions> = {
   model: 'gpt-3.5-turbo',
   maxTokens: 1000,
   temperature: 0.7,
-  diffSizeLimit: 4000 // 4000 characters to prevent token limits
+  diffSizeLimit: 4000, // 4000 characters to prevent token limits
 };
 
 /**
@@ -111,12 +111,16 @@ export class OpenAIApiClient {
 
   constructor(clientConfig: OpenAIClientConfig) {
     this.config = { ...DEFAULT_CONFIG, ...clientConfig };
-    
+
     // Validate API key
-    if (!clientConfig.apiKey || typeof clientConfig.apiKey !== 'string' || clientConfig.apiKey.trim() === '') {
+    if (
+      !clientConfig.apiKey ||
+      typeof clientConfig.apiKey !== 'string' ||
+      clientConfig.apiKey.trim() === ''
+    ) {
       throw new OpenAIServiceError(
         OpenAIErrorCode.INVALID_API_KEY,
-        'OpenAI API key is required and cannot be empty'
+        'OpenAI API key is required and cannot be empty',
       );
     }
 
@@ -124,7 +128,7 @@ export class OpenAIApiClient {
     this.client = new OpenAI({
       apiKey: clientConfig.apiKey.trim(),
       timeout: this.config.timeout,
-      maxRetries: this.config.maxRetries
+      maxRetries: this.config.maxRetries,
     });
   }
 
@@ -139,14 +143,15 @@ export class OpenAIApiClient {
     // Truncate at the limit but try to end at a line break for better readability
     let truncated = diff.substring(0, limit);
     const lastNewlineIndex = truncated.lastIndexOf('\n');
-    
-    if (lastNewlineIndex > limit * 0.8) { // Only use newline if it's not too far back
+
+    if (lastNewlineIndex > limit * 0.8) {
+      // Only use newline if it's not too far back
       truncated = truncated.substring(0, lastNewlineIndex);
     }
-    
+
     // Add truncation indicator
     truncated += '\n\n[... diff truncated due to size limit ...]';
-    
+
     return { truncated, wasTruncated: true };
   }
 
@@ -169,7 +174,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.INVALID_API_KEY,
             'Invalid OpenAI API key. Please check your API key configuration.',
             statusCode,
-            error
+            error,
           );
 
         case 'quota_exceeded':
@@ -178,7 +183,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.QUOTA_EXCEEDED,
             'OpenAI quota exceeded. Please check your account usage and billing.',
             statusCode,
-            error
+            error,
           );
 
         case 'rate_limit_exceeded':
@@ -186,7 +191,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.RATE_LIMITED,
             'OpenAI rate limit exceeded. Please wait a moment before trying again.',
             statusCode,
-            error
+            error,
           );
 
         case 'model_not_found':
@@ -194,7 +199,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.MODEL_NOT_FOUND,
             'The specified OpenAI model was not found or is not available.',
             statusCode,
-            error
+            error,
           );
 
         case 'content_filter':
@@ -202,7 +207,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.CONTENT_FILTER,
             'Content was filtered by OpenAI safety systems.',
             statusCode,
-            error
+            error,
           );
 
         case 'context_length_exceeded':
@@ -211,7 +216,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.TOKEN_LIMIT_EXCEEDED,
             'The request exceeded the model token limit. Try reducing the diff size.',
             statusCode,
-            error
+            error,
           );
 
         case 'invalid_request_error':
@@ -219,7 +224,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.INVALID_REQUEST,
             `Invalid request to OpenAI API: ${errorMessage}`,
             statusCode,
-            error
+            error,
           );
 
         default:
@@ -227,7 +232,7 @@ export class OpenAIApiClient {
             OpenAIErrorCode.UNKNOWN_ERROR,
             `OpenAI API error: ${errorMessage}`,
             statusCode,
-            error
+            error,
           );
       }
     }
@@ -238,7 +243,7 @@ export class OpenAIApiClient {
         OpenAIErrorCode.TIMEOUT,
         'Request to OpenAI API timed out. Please try again.',
         undefined,
-        error
+        error,
       );
     }
 
@@ -247,7 +252,7 @@ export class OpenAIApiClient {
         OpenAIErrorCode.NETWORK_ERROR,
         'Network error connecting to OpenAI API. Please check your internet connection.',
         undefined,
-        error
+        error,
       );
     }
 
@@ -256,18 +261,18 @@ export class OpenAIApiClient {
       OpenAIErrorCode.UNKNOWN_ERROR,
       `Unexpected error: ${error.message || 'Unknown error occurred'}`,
       undefined,
-      error
+      error,
     );
   }
 
   /**
    * Generates a PR description based on the provided diff content
-   * 
+   *
    * @param diffContent - The diff content from the pull request
    * @param options - Optional generation options
    * @returns Promise that resolves to the generated description
    * @throws OpenAIServiceError for API failures
-   * 
+   *
    * @example
    * ```typescript
    * const client = new OpenAIApiClient({ apiKey: 'your-api-key' });
@@ -276,18 +281,21 @@ export class OpenAIApiClient {
    * ```
    */
   async generatePRDescription(
-    diffContent: string, 
-    options: GenerateDescriptionOptions = {}
+    diffContent: string,
+    options: GenerateDescriptionOptions = {},
   ): Promise<GeneratedDescription> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
-    
+
     console.log(`🤖 [OpenAI API] Starting PR description generation`);
     console.log(`🔧 [OpenAI API] Using model: ${opts.model}`);
     console.log(`📏 [OpenAI API] Original diff size: ${diffContent.length} characters`);
 
     // Truncate diff if necessary
-    const { truncated: processedDiff, wasTruncated } = this.truncateDiff(diffContent, opts.diffSizeLimit);
-    
+    const { truncated: processedDiff, wasTruncated } = this.truncateDiff(
+      diffContent,
+      opts.diffSizeLimit,
+    );
+
     if (wasTruncated) {
       console.log(`✂️  [OpenAI API] Diff truncated to ${processedDiff.length} characters`);
     }
@@ -297,26 +305,26 @@ export class OpenAIApiClient {
 
     try {
       console.log(`🌐 [OpenAI API] Sending request to OpenAI...`);
-      
+
       const response = await this.client.chat.completions.create({
         model: opts.model,
         messages: [
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         max_tokens: opts.maxTokens,
         temperature: opts.temperature,
-        stream: false
+        stream: false,
       });
 
       const generatedText = response.choices[0]?.message?.content;
-      
+
       if (!generatedText) {
         throw new OpenAIServiceError(
           OpenAIErrorCode.INVALID_REQUEST,
-          'OpenAI API returned empty response'
+          'OpenAI API returned empty response',
         );
       }
 
@@ -324,7 +332,9 @@ export class OpenAIApiClient {
 
       console.log(`✅ [OpenAI API] Description generated successfully`);
       console.log(`📊 [OpenAI API] Tokens used: ${tokensUsed || 'unknown'}`);
-      console.log(`📝 [OpenAI API] Generated description length: ${generatedText.length} characters`);
+      console.log(
+        `📝 [OpenAI API] Generated description length: ${generatedText.length} characters`,
+      );
 
       return {
         description: generatedText,
@@ -332,9 +342,8 @@ export class OpenAIApiClient {
         tokensUsed: tokensUsed || 0,
         diffSizeTruncated: wasTruncated,
         originalDiffSize: diffContent.length,
-        truncatedDiffSize: processedDiff.length
+        truncatedDiffSize: processedDiff.length,
       };
-
     } catch (error) {
       console.error(`❌ [OpenAI API] Generation failed:`, error);
       throw this.transformOpenAIError(error);
@@ -343,23 +352,22 @@ export class OpenAIApiClient {
 
   /**
    * Tests the connection to OpenAI API with the current configuration
-   * 
+   *
    * @returns Promise that resolves to true if connection is successful
    * @throws OpenAIServiceError for API failures
    */
   async testConnection(): Promise<boolean> {
     try {
       console.log(`🔍 [OpenAI API] Testing connection...`);
-      
+
       const response = await this.client.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: 'Test connection' }],
-        max_tokens: 5
+        max_tokens: 5,
       });
 
       console.log(`✅ [OpenAI API] Connection test successful`);
       return true;
-
     } catch (error) {
       console.error(`❌ [OpenAI API] Connection test failed:`, error);
       throw this.transformOpenAIError(error);
@@ -369,7 +377,7 @@ export class OpenAIApiClient {
 
 /**
  * Gets a user-friendly error message from an OpenAIServiceError
- * 
+ *
  * @param error - The error to format
  * @returns User-friendly error message
  */
@@ -377,31 +385,31 @@ export function formatOpenAIServiceError(error: OpenAIServiceError): string {
   switch (error.code) {
     case OpenAIErrorCode.INVALID_API_KEY:
       return 'Invalid OpenAI API key. Please check your configuration.';
-    
+
     case OpenAIErrorCode.QUOTA_EXCEEDED:
       return 'OpenAI quota exceeded. Please check your account usage and billing.';
-    
+
     case OpenAIErrorCode.RATE_LIMITED:
       return 'Too many requests to OpenAI. Please wait a moment before trying again.';
-    
+
     case OpenAIErrorCode.MODEL_NOT_FOUND:
       return 'The specified AI model is not available. Please try again later.';
-    
+
     case OpenAIErrorCode.CONTENT_FILTER:
       return 'Content was filtered for safety reasons. Please try with different content.';
-    
+
     case OpenAIErrorCode.TOKEN_LIMIT_EXCEEDED:
       return 'The diff content is too large for processing. Please try with a smaller PR.';
-    
+
     case OpenAIErrorCode.NETWORK_ERROR:
       return 'Network error connecting to OpenAI. Please check your internet connection.';
-    
+
     case OpenAIErrorCode.TIMEOUT:
       return 'OpenAI request timed out. Please try again.';
-    
+
     case OpenAIErrorCode.INVALID_REQUEST:
       return 'Invalid request format. Please try again.';
-    
+
     default:
       return error.message || 'An unexpected error occurred while generating the description.';
   }
@@ -409,11 +417,11 @@ export function formatOpenAIServiceError(error: OpenAIServiceError): string {
 
 /**
  * Factory function to create an OpenAI API client
- * 
+ *
  * @param apiKey - OpenAI API key
  * @param config - Optional client configuration
  * @returns Configured OpenAIApiClient instance
- * 
+ *
  * @example
  * ```typescript
  * const client = createOpenAIClient('your-api-key', {
@@ -424,7 +432,7 @@ export function formatOpenAIServiceError(error: OpenAIServiceError): string {
  */
 export function createOpenAIClient(
   apiKey: string,
-  config: Omit<OpenAIClientConfig, 'apiKey'> = {}
+  config: Omit<OpenAIClientConfig, 'apiKey'> = {},
 ): OpenAIApiClient {
   return new OpenAIApiClient({ apiKey, ...config });
 }
