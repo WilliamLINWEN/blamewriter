@@ -179,12 +179,32 @@ class BackgroundService {
     try {
       // Try to get error details from response body
       const errorData = await response.json();
-      if (errorData.error) {
-        return { error: errorData.error };
+      console.log('Backend error response:', errorData);
+      
+      // Check if backend provides specific error message
+      if (errorData && typeof errorData === 'object') {
+        // Handle different error response formats
+        if (errorData.error && typeof errorData.error === 'string') {
+          return { error: errorData.error };
+        }
+        
+        if (errorData.message && typeof errorData.message === 'string') {
+          return { error: errorData.message };
+        }
+        
+        // If error is an object, try to extract message
+        if (errorData.error && typeof errorData.error === 'object') {
+          if (errorData.error.message) {
+            return { error: errorData.error.message };
+          }
+          if (errorData.error.details) {
+            return { error: errorData.error.details };
+          }
+        }
       }
     } catch (e) {
       // Ignore JSON parsing errors for error responses
-      console.warn('Could not parse error response as JSON');
+      console.warn('Could not parse error response as JSON:', e);
     }
 
     // Return appropriate error message based on status code

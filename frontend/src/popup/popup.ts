@@ -240,7 +240,13 @@ class PopupController {
 
   private handleGenerateResponse(response: GenerateResponse): void {
     if (response.error) {
-      this.showError(response.error);
+      // Ensure error is a string
+      let errorMessage = response.error;
+      if (typeof errorMessage !== 'string') {
+        console.error('Error is not a string:', errorMessage);
+        errorMessage = 'An unexpected error occurred';
+      }
+      this.showError(errorMessage);
       this.resultTextarea.value = '';
       this.hideActionButtons();
     } else if (response.description) {
@@ -323,7 +329,14 @@ class PopupController {
   }
 
   private showError(message: string): void {
-    this.statusMessage.textContent = message;
+    // Ensure message is a string
+    let errorMessage = message;
+    if (typeof message !== 'string') {
+      console.error('showError received non-string message:', message);
+      errorMessage = String(message) || 'An unexpected error occurred';
+    }
+    
+    this.statusMessage.textContent = errorMessage;
     this.statusMessage.className = 'status-message error';
   }
 
