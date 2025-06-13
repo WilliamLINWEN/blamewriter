@@ -9,7 +9,43 @@
 <body>
     <h1>Extension Options</h1>
     <div id="options-content">
-        <p>Options page content will go here.</p>
+        <h2>Template Management</h2>
+
+        <div id="template-list-container">
+            <h3>Current Templates</h3>
+            <ul id="template-list">
+                <li>No templates loaded yet.</li>
+            </ul>
+        </div>
+
+        <div id="template-form-container">
+            <h3 id="template-form-heading">Add New Template</h3>
+            <input type="hidden" id="template-id" name="template-id">
+            <div>
+                <label for="template-name">Name:</label>
+                <input type="text" id="template-name" name="template-name">
+            </div>
+            <div>
+                <label for="template-content">Content:</label>
+                <textarea id="template-content" name="template-content" rows="10" cols="50"></textarea>
+            </div>
+            <div>
+                <button type="button" id="preview-template-button">Preview Template</button>
+            </div>
+            <div id="template-preview-area" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 50px; background-color: #f9f9f9;">
+                <p><em>Preview will appear here...</em></p>
+            </div>
+            <button id="save-template-button">Save New Template</button>
+            <button type="button" id="clear-template-form-button">Clear Form / New</button>
+        </div>
+
+        <div id="template-import-export-container" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <h3>Manage All Templates</h3>
+            <button type="button" id="export-templates-button">Export All Templates (JSON)</button>
+            <button type="button" id="import-templates-button">Import Templates (JSON)</button>
+            <input type="file" id="import-file-input" accept=".json" style="display: none;">
+        </div>
+
     </div>
     <script src="options.js"></script>
 </body>

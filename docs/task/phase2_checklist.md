@@ -34,14 +34,14 @@ This checklist covers the implementation of Phase 2 for the Bitbucket PR Descrip
 
 ### 1.3 Template Management System
 
-- [ ] Design template data structure with ID, name, content, and metadata
-- [ ] Implement template CRUD operations using `chrome.storage.sync`
-- [ ] Create template editor UI with syntax highlighting (optional)
-- [ ] Add template validation to ensure proper placeholder usage
-- [ ] Implement template preview functionality
-- [ ] Create default template presets for different PR types
-- [ ] Add template import/export functionality (JSON format)
-- [ ] Implement template deletion with confirmation dialogs
+- [v] Design template data structure with ID, name, content, and metadata
+- [v] Implement template CRUD operations using `chrome.storage.sync`
+- [v] Create template editor UI with syntax highlighting (optional) - Basic UI implemented
+- [v] Add template validation to ensure proper placeholder usage - Basic (name/content presence) validation implemented
+- [v] Implement template preview functionality
+- [v] Create default template presets for different PR types
+- [v] Add template import/export functionality (JSON format)
+- [v] Implement template deletion with confirmation dialogs
 
 ### 1.4 LLM Provider Configuration
 
