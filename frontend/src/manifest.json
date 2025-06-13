@@ -3,7 +3,7 @@
   "name": "Bitbucket PR Helper (MVP)",
   "version": "0.1.0",
   "description": "Automatically generates PR descriptions for Bitbucket using AI",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "storage"],
   "host_permissions": ["http://localhost:3001/*"],
   "action": {
     "default_popup": "popup.html",
@@ -22,5 +22,10 @@
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
     "48": "icons/icon48.png"
+  },
+  "options_page": "options/options.html",
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
   }
 }

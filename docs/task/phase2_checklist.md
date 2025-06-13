@@ -17,20 +17,20 @@ This checklist covers the implementation of Phase 2 for the Bitbucket PR Descrip
 
 ### 1.1 Manifest Configuration Enhancement
 
-- [ ] Update `frontend/src/manifest.json` to add `options_page` configuration
-- [ ] Add `storage` permission to manifest for chrome.storage.sync usage
-- [ ] Update permissions array to include both `activeTab` and `storage`
-- [ ] Verify `host_permissions` includes backend development URL
-- [ ] Add `options_ui` configuration for better UX (optional)
+- [v] Update `frontend/src/manifest.json` to add `options_page` configuration
+- [v] Add `storage` permission to manifest for chrome.storage.sync usage
+- [v] Update permissions array to include both `activeTab` and `storage`
+- [v] Verify `host_permissions` includes backend development URL
+- [v] Add `options_ui` configuration for better UX (optional)
 
 ### 1.2 Options Page Infrastructure
 
-- [ ] Create `frontend/src/options/options.html` with comprehensive layout
-- [ ] Create `frontend/src/options/options.css` with modern styling
-- [ ] Create `frontend/src/options/options.ts` with TypeScript interfaces
-- [ ] Implement main OptionsController class structure
-- [ ] Add error handling and validation framework for options page
-- [ ] Implement loading states and user feedback mechanisms
+- [v] Create `frontend/src/options/options.html` with comprehensive layout
+- [v] Create `frontend/src/options/options.css` with modern styling
+- [v] Create `frontend/src/options/options.ts` with TypeScript interfaces
+- [v] Implement main OptionsController class structure
+- [v] Add error handling and validation framework for options page
+- [v] Implement loading states and user feedback mechanisms
 
 ### 1.3 Template Management System
 
