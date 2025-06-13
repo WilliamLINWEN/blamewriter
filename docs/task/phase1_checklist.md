@@ -204,12 +204,12 @@ concept feasibility.
 
 ### 3.6 Content Script Preparation (Basic)
 
-- [ ] Create placeholder [`frontend/content.js`](frontend/content.js) for future
+- [v] Create placeholder [`frontend/content.js`](frontend/content.js) for future
       page integration
-- [ ] Add basic page detection to verify we're on a Bitbucket PR page
-- [ ] Implement URL parsing to extract PR information
-- [ ] Add console logging for debugging page context
-- [ ] Prepare foundation for future in-page UI injection
+- [v] Add basic page detection to verify we're on a Bitbucket PR page
+- [v] Implement URL parsing to extract PR information
+- [v] Add console logging for debugging page context
+- [v] Prepare foundation for future in-page UI injection
 
 ---
 
