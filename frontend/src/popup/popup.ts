@@ -20,15 +20,15 @@ interface GenerateResponse {
 }
 
 class PopupController {
-  private tokenInput: HTMLInputElement;
-  private generateButton: HTMLButtonElement;
-  private resultTextarea: HTMLTextAreaElement;
-  private statusMessage: HTMLElement;
-  private actionButtons: HTMLElement;
-  private copyButton: HTMLButtonElement;
-  private fillButton: HTMLButtonElement;
-  private loadingSpinner: HTMLElement;
-  private buttonText: HTMLElement;
+  private tokenInput!: HTMLInputElement;
+  private generateButton!: HTMLButtonElement;
+  private resultTextarea!: HTMLTextAreaElement;
+  private statusMessage!: HTMLElement;
+  private actionButtons!: HTMLElement;
+  private copyButton!: HTMLButtonElement;
+  private fillButton!: HTMLButtonElement;
+  private loadingSpinner!: HTMLElement;
+  private buttonText!: HTMLElement;
 
   constructor() {
     this.initializeElements();
@@ -136,9 +136,9 @@ class PopupController {
     }
 
     return {
-      workspace: match[1],
-      repo: match[2],
-      prId: match[3],
+      workspace: match[1]!,
+      repo: match[2]!,
+      prId: match[3]!,
       fullUrl: url
     };
   }

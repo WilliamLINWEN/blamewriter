@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "webpack --mode development --watch",
     "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
     "clean": "rimraf dist",
     "prepare": "npm run clean && npm run build",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.js",
-    "lint:fix": "eslint src --ext .ts,.js --fix"
+    "lint:fix": "eslint src --ext .ts,.js --fix",
+    "test:load": "echo 'To test extension loading: 1. Open Chrome, 2. Go to chrome://extensions/, 3. Enable Developer mode, 4. Click Load unpacked, 5. Select the dist/ directory'"
   },
   "dependencies": {},
   "devDependencies": {
