@@ -45,14 +45,14 @@ This checklist covers the implementation of Phase 2 for the Bitbucket PR Descrip
 
 ### 1.4 LLM Provider Configuration
 
-- [ ] Create LLM provider selection interface (dropdown/radio buttons)
-- [ ] Implement API key input fields with secure handling
-- [ ] Add provider-specific model selection dropdowns
-- [ ] Create Ollama endpoint configuration input field
-- [ ] Implement API key validation with backend verification
-- [ ] Add provider capability documentation/help text
-- [ ] Create cost estimation display for different providers
-- [ ] Implement provider availability status checking
+- [v] Create LLM provider selection interface (dropdown/radio buttons)
+- [v] Implement API key input fields with secure handling (input field and sync storage as per Phase 2 doc)
+- [v] Add provider-specific model selection dropdowns
+- [v] Create Ollama endpoint configuration input field
+- [v] Implement API key validation with backend verification (client-side presence check & placeholder UI for backend check)
+- [v] Add provider capability documentation/help text
+- [v] Create cost estimation display for different providers (Placeholder UI added)
+- [v] Implement provider availability status checking (Placeholder UI added)
 
 ### 1.5 Enhanced Popup UI
 

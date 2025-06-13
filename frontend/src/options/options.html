@@ -46,6 +46,23 @@
             <input type="file" id="import-file-input" accept=".json" style="display: none;">
         </div>
 
+        <hr style="margin: 20px 0;">
+        <h2>LLM Provider Configuration</h2>
+        <div id="llm-config-container">
+            <div>
+                <label for="llm-provider-select">Select LLM Provider:</label>
+                <select id="llm-provider-select" name="llm-provider-select">
+                    <option value="">-- Loading Providers --</option>
+                </select>
+            </div>
+            <div id="llm-provider-settings-container" style="margin-top: 15px; padding: 10px; border: 1px solid #eee;">
+                <p><em>Select a provider to see its settings.</em></p>
+            </div>
+            <div id="llm-provider-helptext-container" style="margin-top: 10px; font-style: italic; color: #555;">
+            </div>
+             <button type="button" id="save-llm-config-button" style="margin-top:15px;">Save LLM Configuration</button>
+        </div>
+
     </div>
     <script src="options.js"></script>
 </body>
