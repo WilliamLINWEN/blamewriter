@@ -6,7 +6,7 @@ import {
     LLMProvider as LLMProviderDef,
     ModelDetail
 } from '../common/storage_schema';
-import { getFromStorage } from '../common/storage_utils';
+import { getFromStorage, updateTemplateUsageStats } from '../common/storage_utils';
 
 interface BitbucketPRInfo {
   workspace: string;
@@ -308,9 +308,14 @@ class PopupController {
             providerId: selectedProviderId,
             modelId: selectedModelId,
             apiKey: this.currentUserLLMConfig.apiKey || null,
-            customEndpoint: this.currentUserLLMConfig.customEndpoint || null,
-          }
+            customEndpoint: this.currentUserLLMConfig.customEndpoint || null
+        }
       };
+
+      // Track template usage (async, don't wait for it)
+      updateTemplateUsageStats(selectedTemplate.id).catch(error => 
+          console.warn('Failed to update template usage stats:', error)
+      );
 
       console.log("Sending generation request to background:", request);
       const response = await this.sendMessageToBackground(request);

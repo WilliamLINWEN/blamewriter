@@ -7,10 +7,19 @@ import {
     CURRENT_SCHEMA_VERSION,
     LLMProvider,
     ModelDetail,
-    ExtensionStorage // Added for export/import all
+    ExtensionStorage, // Added for export/import all
+    StorageQuotaInfo,
+    StorageCleanupConfig
 } from '../common/storage_schema';
 
-import { getFromStorage, saveToStorage } from '../common/storage_utils';
+import { 
+    getFromStorage, 
+    saveToStorage, 
+    getStorageQuotaInfo,
+    getStorageUsageBreakdown,
+    performStorageCleanup,
+    updateTemplateUsageStats
+} from '../common/storage_utils';
 
 interface IOptionsController {
     init(): Promise<void>;
@@ -27,7 +36,13 @@ interface IOptionsController {
     saveLLMConfiguration(): Promise<void>;
     renderLLMProviderSelection(): void;
     handleProviderSelectionChanged(): void;
-    setupStorageListeners(): void;
+
+    // Storage management methods
+    loadStorageInfo(): Promise<void>;
+    refreshStorageInfo(): Promise<void>;
+    performCleanup(): Promise<void>;
+    loadCleanupSettings(): Promise<void>;
+    saveCleanupSettings(): Promise<void>;
 
     handleEvent(event: Event): void;
     renderSection(section: string): void;
@@ -80,6 +95,20 @@ class OptionsController implements IOptionsController {
         if (saveLLMButton) saveLLMButton.addEventListener('click', () => this.saveLLMConfiguration());
 
         this.setupStorageListeners();
+
+        // Storage management event listeners
+        const refreshStorageButton = document.getElementById('refresh-storage-info-button');
+        if (refreshStorageButton) refreshStorageButton.addEventListener('click', () => this.refreshStorageInfo());
+        
+        const cleanupStorageButton = document.getElementById('cleanup-storage-button');
+        if (cleanupStorageButton) cleanupStorageButton.addEventListener('click', () => this.performCleanup());
+        
+        const saveCleanupSettingsButton = document.getElementById('save-cleanup-settings-button');
+        if (saveCleanupSettingsButton) saveCleanupSettingsButton.addEventListener('click', () => this.saveCleanupSettings());
+
+        // Load initial storage info
+        await this.loadStorageInfo();
+        await this.loadCleanupSettings();
     }
 
     private setupStorageListeners(): void {
@@ -258,10 +287,28 @@ class OptionsController implements IOptionsController {
 
     public async importAllSettings(event: Event): Promise<void> {
         const fileInput = event.target as HTMLInputElement;
-        if (!fileInput.files || fileInput.files.length === 0) { this.showFeedback("No file selected.", "info"); return; }
+        if (!fileInput.files || fileInput.files.length === 0) { 
+            this.showFeedback("No file selected.", "info"); 
+            return; 
+        }
+        
         const file = fileInput.files[0];
-        if (file.type !== "application/json") { this.showFeedback("Please select a valid JSON file.", "error"); fileInput.value = ""; return; }
-        if (!window.confirm("Import settings? This will OVERWRITE ALL current settings. Export first?")) { fileInput.value = ""; return; }
+        if (!file) {
+            this.showFeedback("No file selected.", "info");
+            return;
+        }
+        
+        if (file.type !== "application/json" && !file.name.endsWith('.json')) { 
+            this.showFeedback("Please select a valid JSON file.", "error"); 
+            fileInput.value = ""; 
+            return; 
+        }
+        
+        if (!window.confirm("Import settings? This will OVERWRITE ALL current settings. Export first?")) { 
+            fileInput.value = ""; 
+            return; 
+        }
+        
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -287,13 +334,221 @@ class OptionsController implements IOptionsController {
         reader.readAsText(file);
     }
 
-    private renderTemplateList(): void {
-        const el=document.getElementById('template-list');if(!el)return;
-        if(this.templates.length===0){el.innerHTML='<li>No templates.</li>';return;}
-        el.innerHTML=this.templates.map(t=>`<li><span>${t.name} (ID: ${t.id.substring(0,8)}...)</span> <button class="edit-template-button" data-id="${t.id}">Edit</button> <button class="delete-template-button" data-id="${t.id}">Delete</button></li>`).join('');
-        el.querySelectorAll('.edit-template-button').forEach(b=>b.addEventListener('click',e=>this.populateFormForEdit((e.target as HTMLElement).dataset.id!)));
-        el.querySelectorAll('.delete-template-button').forEach(b=>b.addEventListener('click',e=>this.deleteTemplate((e.target as HTMLElement).dataset.id!)));
+    // Storage Management Methods
+    public async loadStorageInfo(): Promise<void> {
+        try {
+            const quotaInfo = await getStorageQuotaInfo();
+            const breakdown = await getStorageUsageBreakdown();
+            this.updateStorageDisplay(quotaInfo, breakdown);
+        } catch (error) {
+            console.error('Error loading storage info:', error);
+            this.showFeedback('Failed to load storage information', 'error');
+        }
     }
+
+    public async refreshStorageInfo(): Promise<void> {
+        const button = document.getElementById('refresh-storage-info-button') as HTMLButtonElement;
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Refreshing...';
+        }
+        
+        try {
+            await this.loadStorageInfo();
+            this.showFeedback('Storage information refreshed', 'success');
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Refresh Usage Info';
+            }
+        }
+    }
+
+    public async performCleanup(): Promise<void> {
+        const button = document.getElementById('cleanup-storage-button') as HTMLButtonElement;
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Cleaning...';
+        }
+
+        try {
+            const success = await performStorageCleanup();
+            if (success) {
+                await this.loadStorageInfo();
+                await this.loadTemplates(); // Refresh template list
+                this.showFeedback('Storage cleanup completed successfully', 'success');
+            } else {
+                this.showFeedback('Storage cleanup failed or no cleanup needed', 'info');
+            }
+        } catch (error) {
+            console.error('Error during storage cleanup:', error);
+            this.showFeedback('Storage cleanup failed', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Clean Up Storage';
+            }
+        }
+    }
+
+    public async loadCleanupSettings(): Promise<void> {
+        try {
+            const appSettings = await getFromStorage('appSettings', { schemaVersion: 1 });
+            const config = appSettings.storageCleanupConfig || {
+                autoCleanupEnabled: true,
+                maxTemplates: 20,
+                warningThresholdPercent: 80,
+                criticalThresholdPercent: 95,
+                cleanupStrategy: 'oldest' as const
+            };
+
+            // Update UI with current settings
+            const autoCleanupCheckbox = document.getElementById('auto-cleanup-enabled') as HTMLInputElement;
+            const maxTemplatesInput = document.getElementById('max-templates') as HTMLInputElement;
+            const cleanupStrategySelect = document.getElementById('cleanup-strategy') as HTMLSelectElement;
+            const warningThresholdInput = document.getElementById('warning-threshold') as HTMLInputElement;
+
+            if (autoCleanupCheckbox) autoCleanupCheckbox.checked = config.autoCleanupEnabled;
+            if (maxTemplatesInput) maxTemplatesInput.value = config.maxTemplates.toString();
+            if (cleanupStrategySelect) cleanupStrategySelect.value = config.cleanupStrategy;
+            if (warningThresholdInput) warningThresholdInput.value = config.warningThresholdPercent.toString();
+        } catch (error) {
+            console.error('Error loading cleanup settings:', error);
+        }
+    }
+
+    public async saveCleanupSettings(): Promise<void> {
+        try {
+            const autoCleanupCheckbox = document.getElementById('auto-cleanup-enabled') as HTMLInputElement;
+            const maxTemplatesInput = document.getElementById('max-templates') as HTMLInputElement;
+            const cleanupStrategySelect = document.getElementById('cleanup-strategy') as HTMLSelectElement;
+            const warningThresholdInput = document.getElementById('warning-threshold') as HTMLInputElement;
+
+            const config: StorageCleanupConfig = {
+                autoCleanupEnabled: autoCleanupCheckbox?.checked || true,
+                maxTemplates: parseInt(maxTemplatesInput?.value || '20'),
+                warningThresholdPercent: parseInt(warningThresholdInput?.value || '80'),
+                criticalThresholdPercent: 95,
+                cleanupStrategy: (cleanupStrategySelect?.value as any) || 'oldest'
+            };
+
+            const appSettings = await getFromStorage('appSettings', { schemaVersion: 1 });
+            appSettings.storageCleanupConfig = config;
+
+            await saveToStorage({ appSettings }, false); // Skip quota check for settings
+            this.showFeedback('Cleanup settings saved successfully', 'success');
+        } catch (error) {
+            console.error('Error saving cleanup settings:', error);
+            this.showFeedback('Failed to save cleanup settings', 'error');
+        }
+    }
+
+    private updateStorageDisplay(quotaInfo: StorageQuotaInfo, breakdown: {[key: string]: number}): void {
+        // Update usage bar
+        const usageFill = document.getElementById('storage-usage-fill');
+        const usageText = document.getElementById('storage-usage-text');
+        
+        if (usageFill) {
+            usageFill.style.width = `${quotaInfo.usagePercentage}%`;
+            usageFill.className = `storage-usage-fill ${quotaInfo.isCritical ? 'critical' : quotaInfo.isNearLimit ? 'warning' : ''}`;
+        }
+        
+        if (usageText) {
+            usageText.textContent = `${this.formatBytes(quotaInfo.bytesInUse)} / ${this.formatBytes(quotaInfo.quotaBytes)} (${quotaInfo.usagePercentage}%)`;
+        }
+
+        // Update breakdown
+        const breakdownContainer = document.getElementById('storage-breakdown');
+        if (breakdownContainer) {
+            const items = Object.entries(breakdown)
+                .sort(([,a], [,b]) => b - a)
+                .map(([key, size]) => `
+                    <div class="storage-item">
+                        <span class="storage-item-name">${key}</span>
+                        <span class="storage-item-size">${this.formatBytes(size)}</span>
+                    </div>
+                `).join('');
+            breakdownContainer.innerHTML = items;
+        }
+
+        // Show status message
+        this.showStorageStatus(quotaInfo);
+    }
+
+    private showStorageStatus(quotaInfo: StorageQuotaInfo): void {
+        // Remove existing status messages
+        const existingStatus = document.querySelector('.storage-status-warning, .storage-status-critical, .storage-status-healthy');
+        if (existingStatus) existingStatus.remove();
+
+        const container = document.getElementById('storage-info-display');
+        if (!container) return;
+
+        let statusDiv: HTMLDivElement;
+        if (quotaInfo.isCritical) {
+            statusDiv = document.createElement('div');
+            statusDiv.className = 'storage-status-critical';
+            statusDiv.textContent = `Storage usage is critical (${quotaInfo.usagePercentage}%). Consider cleaning up templates or exporting data.`;
+        } else if (quotaInfo.isNearLimit) {
+            statusDiv = document.createElement('div');
+            statusDiv.className = 'storage-status-warning';
+            statusDiv.textContent = `Storage usage is high (${quotaInfo.usagePercentage}%). You may want to clean up old templates.`;
+        } else {
+            statusDiv = document.createElement('div');
+            statusDiv.className = 'storage-status-healthy';
+            statusDiv.textContent = `Storage usage is healthy (${quotaInfo.usagePercentage}%).`;
+        }
+
+        container.insertBefore(statusDiv, container.firstChild);
+    }
+
+    private formatBytes(bytes: number): string {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    private renderTemplateList(): void {
+        const el = document.getElementById('template-list');
+        if (!el) return;
+        
+        if (this.templates.length === 0) {
+            el.innerHTML = '<li>No templates.</li>';
+            return;
+        }
+        
+        el.innerHTML = this.templates.map(t => `
+            <li>
+                <span class="template-item-name">${t.name} (ID: ${t.id.substring(0, 8)}...)</span>
+                <div class="template-item-actions">
+                    <button class="template-edit-btn" data-id="${t.id}">Edit</button>
+                    <button class="template-delete-btn" data-id="${t.id}">Delete</button>
+                </div>
+            </li>
+        `).join('');
+        
+        // Add event listeners for edit and delete buttons
+        el.querySelectorAll('.template-edit-btn').forEach(b => 
+            b.addEventListener('click', e => {
+                const id = (e.target as HTMLElement).dataset.id;
+                if (id) this.populateFormForEdit(id);
+            })
+        );
+        
+        el.querySelectorAll('.template-delete-btn').forEach(b => 
+            b.addEventListener('click', e => {
+                const id = (e.target as HTMLElement).dataset.id;
+                if (id) {
+                    const template = this.templates.find(t => t.id === id);
+                    if (template && confirm(`Are you sure you want to delete template "${template.name}"?`)) {
+                        this.deleteTemplate(id);
+                    }
+                }
+            })
+        );
+    }
+
     public handleEvent(event: Event): void { console.log("Generic event:", event); }
     public renderSection(section: string): void { console.log("Render section:", section); }
     public handleError(error: any, message: string): void { console.error("Error:", message, error); this.showFeedback(`${message} ${error?.message || ''}`, 'error'); }

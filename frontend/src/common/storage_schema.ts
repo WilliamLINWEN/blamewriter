@@ -50,12 +50,46 @@ export interface UserLLMConfig {
 }
 
 /**
+ * Storage quota information and statistics.
+ */
+export interface StorageQuotaInfo {
+    bytesInUse: number;
+    quotaBytes: number;
+    usagePercentage: number;
+    isNearLimit: boolean; // true if usage > 80%
+    isCritical: boolean; // true if usage > 95%
+}
+
+/**
+ * Storage cleanup configuration and statistics.
+ */
+export interface StorageCleanupConfig {
+    autoCleanupEnabled: boolean;
+    maxTemplates: number;
+    warningThresholdPercent: number; // Default 80%
+    criticalThresholdPercent: number; // Default 95%
+    cleanupStrategy: 'oldest' | 'largest' | 'leastUsed';
+    lastCleanupDate?: string;
+}
+
+/**
+ * Template usage statistics for cleanup decisions.
+ */
+export interface TemplateUsageStats {
+    templateId: string;
+    lastUsed: string;
+    useCount: number;
+    sizeBytes: number;
+}
+
+/**
  * Stores global application settings for the extension.
  * This is stored under the 'appSettings' key in chrome.storage.sync.
  */
 export interface AppSettings {
     schemaVersion: number;
     lastSeenVersion?: string; // e.g., extension version
+    storageCleanupConfig?: StorageCleanupConfig;
     // Add other global preferences here later if needed
 }
 
@@ -67,6 +101,7 @@ export interface ExtensionStorage {
     templates?: Template[];
     userLLMConfig?: UserLLMConfig;
     appSettings?: AppSettings;
+    templateUsageStats?: TemplateUsageStats[];
     // For popup, we might store last selected template ID locally
     // lastSelectedTemplateId?: string; // Example for chrome.storage.local if needed
 }

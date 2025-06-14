@@ -63,6 +63,54 @@
              <button type="button" id="save-llm-config-button" style="margin-top:15px;">Save LLM Configuration</button>
         </div>
 
+        <div id="storage-management-container" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <h3>Storage Management</h3>
+            <div id="storage-info-display">
+                <div class="storage-usage-section">
+                    <h4>Storage Usage</h4>
+                    <div class="storage-usage-bar-container">
+                        <div id="storage-usage-bar" class="storage-usage-bar">
+                            <div id="storage-usage-fill" class="storage-usage-fill"></div>
+                        </div>
+                        <div id="storage-usage-text">Loading...</div>
+                    </div>
+                    <div id="storage-breakdown" class="storage-breakdown">
+                        <!-- Breakdown will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="storage-actions-section">
+                    <h4>Storage Actions</h4>
+                    <button type="button" id="refresh-storage-info-button">Refresh Usage Info</button>
+                    <button type="button" id="cleanup-storage-button">Clean Up Storage</button>
+                </div>
+                <div class="storage-settings-section">
+                    <h4>Cleanup Settings</h4>
+                    <div class="cleanup-setting">
+                        <label for="auto-cleanup-enabled">
+                            <input type="checkbox" id="auto-cleanup-enabled"> Enable automatic cleanup
+                        </label>
+                    </div>
+                    <div class="cleanup-setting">
+                        <label for="max-templates">Maximum templates to keep:</label>
+                        <input type="number" id="max-templates" min="5" max="100" value="20">
+                    </div>
+                    <div class="cleanup-setting">
+                        <label for="cleanup-strategy">Cleanup strategy:</label>
+                        <select id="cleanup-strategy">
+                            <option value="oldest">Remove oldest templates first</option>
+                            <option value="largest">Remove largest templates first</option>
+                            <option value="leastUsed">Remove least used templates first</option>
+                        </select>
+                    </div>
+                    <div class="cleanup-setting">
+                        <label for="warning-threshold">Warning threshold (%):</label>
+                        <input type="number" id="warning-threshold" min="50" max="95" value="80">
+                    </div>
+                    <button type="button" id="save-cleanup-settings-button">Save Cleanup Settings</button>
+                </div>
+            </div>
+        </div>
+
     </div>
     <script src="options.js"></script>
 </body>
