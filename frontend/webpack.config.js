@@ -54,6 +54,10 @@ module.exports = (env, argv) => {
             from: 'src/icons/',
             to: 'icons/',
           },
+          {
+            from: 'src/options/',
+            to: 'options/',
+          },
         ],
       }),
     ],
