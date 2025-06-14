@@ -57,7 +57,7 @@ export class OllamaProvider extends BaseLLMProvider {
     this.ollamaConfig = mergedConfig as OllamaProviderConfig;
     
     // Validate required config
-    if (!config.baseUrl || typeof config.baseUrl !== 'string' || config.baseUrl.trim() === '') {
+    if (!config.baseUrl || config.baseUrl.trim() === '') {
       throw new LLMProviderError(
         LLMProviderType.OLLAMA,
         LLMProviderErrorCode.INVALID_REQUEST,
@@ -65,7 +65,7 @@ export class OllamaProvider extends BaseLLMProvider {
       );
     }
 
-    if (!config.model || typeof config.model !== 'string' || config.model.trim() === '') {
+    if (!config.model || config.model.trim() === '') {
       throw new LLMProviderError(
         LLMProviderType.OLLAMA,
         LLMProviderErrorCode.INVALID_REQUEST,

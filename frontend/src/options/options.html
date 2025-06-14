@@ -30,13 +30,19 @@
                     <div style="margin-top: 10px; font-family: monospace; font-size: 12px;">
                         <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
                             <strong>✅ Currently Supported:</strong><br>
-                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{DIFF_CONTENT}</code> - The complete git diff content showing all code changes
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{DIFF_CONTENT}</code> - The complete git diff content<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{title}}</code> - Pull request title<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{description}}</code> - PR description<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{author}}</code> - PR author name<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{source_branch}}</code> - Source branch name<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{destination_branch}}</code> - Target branch name<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{diff}}</code> - Git diff content (alias for {DIFF_CONTENT})
                         </div>
                         
                         <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 10px;">
                             <strong>🚧 Coming in Future Updates:</strong><br>
                             <small style="color: #856404;">
-                                Variables like <code>{pr_title}</code>, <code>{file_changes}</code>, <code>{commit_messages}</code>, <code>{author}</code>, etc. are planned for future releases.
+                                Advanced variables like <code>{file_changes}</code>, <code>{commit_messages}</code>, <code>{lines_added}</code>, etc. are planned for future releases.
                             </small>
                         </div>
                     </div>
@@ -64,13 +70,17 @@ Please mention any related issues or dependencies if evident from the code.</tex
                 
                 <details style="margin-bottom: 15px;">
                     <summary style="cursor: pointer; font-weight: bold; color: #dc3545;">🐛 Bug Fix Template</summary>
-                    <textarea readonly style="width: 100%; height: 120px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## 🐛 Bug Fix Summary
-Please analyze the code changes and describe what bug was fixed.
+                    <textarea readonly style="width: 100%; height: 120px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## 🐛 Bug Fix: {{title}}
+**Author:** {{author}}
+**Branch:** {{source_branch}} → {{destination_branch}}
+
+## 📝 Issue Description
+{{description}}
 
 ## 🔍 Root Cause & Solution
 Based on the following diff, explain the root cause and solution:
 
-{DIFF_CONTENT}
+{{diff}}
 
 ## ✅ Verification
 Please suggest how to verify this fix works correctly.</textarea>
@@ -78,11 +88,15 @@ Please suggest how to verify this fix works correctly.</textarea>
                 
                 <details>
                     <summary style="cursor: pointer; font-weight: bold; color: #6f42c1;">🔧 Refactoring Template</summary>
-                    <textarea readonly style="width: 100%; height: 100px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## ♻️ Refactoring Summary
-Please describe the refactoring changes and improvements made.
+                    <textarea readonly style="width: 100%; height: 100px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## ♻️ Refactoring: {{title}}
+**Author:** {{author}}
+**Branch:** {{source_branch}} → {{destination_branch}}
 
-## 📝 Code Changes
-{DIFF_CONTENT}
+## 📝 Motivation
+{{description}}
+
+## � Code Changes
+{{diff}}
 
 ## 🎯 Benefits
 Please explain the benefits of these refactoring changes.</textarea>

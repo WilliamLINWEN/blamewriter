@@ -57,7 +57,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     this.openaiConfig = mergedConfig as OpenAIProviderConfig;
     
     // Validate API key
-    if (!config.apiKey || typeof config.apiKey !== 'string' || config.apiKey.trim() === '') {
+    if (!config.apiKey || config.apiKey.trim() === '') {
       throw new LLMProviderError(
         LLMProviderType.OPENAI,
         LLMProviderErrorCode.INVALID_API_KEY,
@@ -68,7 +68,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     // Initialize LangChain ChatOpenAI client
     this.client = new ChatOpenAI({
       openAIApiKey: config.apiKey.trim(),
-      modelName: mergedConfig.model || 'gpt-3.5-turbo',
+      model: mergedConfig.model || 'gpt-3.5-turbo',
       temperature: 0.7,
       maxRetries: mergedConfig.maxRetries || 3,
       ...(mergedConfig.timeout && { timeout: mergedConfig.timeout }),
@@ -93,7 +93,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     if (opts.model !== this.client.model) {
       this.client = new ChatOpenAI({
         openAIApiKey: this.openaiConfig.apiKey,
-        modelName: opts.model,
+        model: opts.model,
         temperature: opts.temperature || 0.7,
         maxRetries: this.openaiConfig.maxRetries || 3,
         ...(this.openaiConfig.timeout && { timeout: this.openaiConfig.timeout }),
@@ -166,7 +166,7 @@ export class OpenAIProvider extends BaseLLMProvider {
 
       const testClient = new ChatOpenAI({
         openAIApiKey: this.openaiConfig.apiKey,
-        modelName: 'gpt-3.5-turbo',
+        model: 'gpt-3.5-turbo',
         maxTokens: 5,
       });
 

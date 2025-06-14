@@ -137,7 +137,8 @@ class BackgroundService {
     }
 
     // Basic token validation
-    if (request.token.length < 20 || !/^[a-zA-Z0-9_-]+$/.test(request.token)) {
+    if (request.token.length < 20) {
+    // if (request.token.length < 20 || !/^[a-zA-Z0-9_-]+$/.test(request.token)) {
       return 'Invalid token format';
     }
 

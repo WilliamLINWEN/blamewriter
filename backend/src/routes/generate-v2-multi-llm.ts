@@ -251,14 +251,21 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
 
     // Parse Bitbucket PR URL
     console.log(`🔍 [Generate V2] Parsing PR URL: ${request.prUrl}`);
-    const prInfo = parseBitbucketPRUrl(request.prUrl);
+    const urlInfo = parseBitbucketPRUrl(request.prUrl);
+    console.log('✅ URL parsed successfully:', urlInfo);
 
-    // Create Bitbucket client and fetch diff
-    console.log(`🌐 [Generate V2] Fetching PR diff from Bitbucket...`);
     const bitbucketClient = createBitbucketClient(request.bitbucketToken);
 
-    const diffData = await bitbucketClient.fetchPRDiff(prInfo);
-    const diffContent = diffData.diff;
+    let prData;
+
+    console.log('🔍 [Generate V2] Fetching PR data from Bitbucket...');
+    const prInfo = await bitbucketClient.fetchPRInfo(urlInfo);
+    console.log(`🌐 [Generate V2] Fetching PR diff from Bitbucket...`);
+    const prDiff = await bitbucketClient.fetchPRDiff(urlInfo);
+    prData = { ...prInfo, diff: prDiff };
+    console.log('✅ PR data fetched successfully');
+
+    const diffContent: string = prData.diff.diff;
 
     console.log(`📊 [Generate V2] Diff retrieved: ${diffContent.length} characters`);
 
@@ -272,10 +279,23 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
 
     console.log(`🤖 [Generate V2] Using provider: ${type}`);
 
+    // Process template with PR information (consistent with generate-v2.ts)
+    console.log(`📝 [Generate V2] Processing template with PR information...`);
+    const processedTemplate = request.template.content
+      .replace('{{title}}', prData.title)
+      .replace('{{description}}', prData.description || 'No description provided')
+      .replace('{{author}}', prData.author?.display_name || 'Unknown')
+      .replace('{{source_branch}}', prData.source?.branch?.name || 'Unknown')
+      .replace('{{destination_branch}}', prData.destination?.branch?.name || 'Unknown')
+      .replace('{{diff}}', prData.diff.diff || 'No diff available')
+      .replace('{DIFF_CONTENT}', prData.diff.diff || 'No diff available'); // Support both formats
+
+    console.log(`📝 [Generate V2] Template processed with PR context`);
+
     // Generate description
     const generationOptions = {
       model: request.llmConfig.modelId,
-      template: request.template.content,
+      template: processedTemplate,
       ...(request.llmConfig.parameters?.maxTokens && { maxTokens: request.llmConfig.parameters.maxTokens }),
       ...(request.llmConfig.parameters?.temperature && { temperature: request.llmConfig.parameters.temperature }),
       ...(request.options?.diffProcessing?.maxChunkSize && { diffSizeLimit: request.options.diffProcessing.maxChunkSize }),
@@ -303,7 +323,14 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
         diffStats,
         template: {
           id: request.template.id,
-          placeholders: request.template.placeholders || {},
+          placeholders: {
+            title: prData.title,
+            description: prData.description,
+            author: prData.author?.display_name,
+            source_branch: prData.source?.branch?.name,
+            destination_branch: prData.destination?.branch?.name,
+            diff: prData.diff.diff
+          }
         },
         llmProvider: {
           name: result.provider,

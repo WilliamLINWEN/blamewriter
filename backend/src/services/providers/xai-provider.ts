@@ -95,7 +95,7 @@ export class XAIProvider extends BaseLLMProvider {
     this.xaiConfig = mergedConfig as XAIProviderConfig;
     
     // Validate API key
-    if (!config.apiKey || typeof config.apiKey !== 'string' || config.apiKey.trim() === '') {
+    if (!config.apiKey || config.apiKey.trim() === '') {
       throw new LLMProviderError(
         LLMProviderType.XAI,
         LLMProviderErrorCode.INVALID_API_KEY,

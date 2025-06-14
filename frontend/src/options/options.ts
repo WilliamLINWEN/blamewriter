@@ -238,7 +238,7 @@ class OptionsController implements IOptionsController {
         const d:Template[]=[
             {
                 id:this.generateId(),
-                name:"Default Feature PR",
+                name:"Default Feature PR",  
                 content:"## 🎯 Overview\nPlease analyze the following code changes and provide a comprehensive PR description.\n\n## 📝 Code Changes\n{DIFF_CONTENT}\n\n## 🧪 Testing Suggestions\nPlease suggest appropriate testing based on the changes above.\n\n## 📦 Deployment Notes\nPlease identify any deployment considerations.",
                 metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
             },
@@ -279,35 +279,40 @@ class OptionsController implements IOptionsController {
     }
     public previewTemplate():void{
         const ci=document.getElementById('template-content')as HTMLTextAreaElement,pa=document.getElementById('template-preview-area'); if(!ci||!pa){this.showFeedback("Preview elements missing.","error");return;} let c=ci.value;
-        const p={
-            '{DIFF_CONTENT}': `diff --git a/src/auth/middleware.ts b/src/auth/middleware.ts
+        const sampleDiff = `diff --git a/src/auth/middleware.ts b/src/auth/middleware.ts
 new file mode 100644
 index 0000000..abcd123
 --- /dev/null
 +++ b/src/auth/middleware.ts
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,25 @@
 +import jwt from 'jsonwebtoken';
 +import { Request, Response, NextFunction } from 'express';
 +
-+export interface AuthRequest extends Request {
-+  user?: { id: string; email: string };
-+}
++export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
++  const authHeader = req.headers['authorization'];
++  const token = authHeader && authHeader.split(' ')[1];
 +
-
-diff --git a/src/models/User.ts b/src/models/User.ts
-index 1234567..abcd890 100644
---- a/src/models/User.ts
-+++ b/src/models/User.ts
-@@ -5,6 +5,7 @@ export interface User {
-   id: string;
-   email: string;
-   password: string;
-+  createdAt: Date;
- }
- 
- export class UserModel {`
++  if (!token) {
++    return res.status(401).json({ error: 'Access token required' });
++  }
++
++  jwt.verify(token, process.env.JWT_SECRET!, (err, user) => {
++    if (err) return res.status(403).json({ error: 'Invalid token' });
++    req.user = user;
++    next();
++  });
++};`;
+        
+        const p={
+            '{DIFF_CONTENT}': sampleDiff,
+            '{{title}}': 'Add JWT authentication middleware',
+            '{{description}}': 'Implements secure JWT token validation for API endpoints',
+            '{{author}}': 'John Smith',
+            '{{source_branch}}': 'feature/auth-middleware',
+            '{{destination_branch}}': 'main',
+            '{{diff}}': sampleDiff
         };
-        for(const[k,v]of Object.entries(p))c=c.split(k).join(v); pa.textContent=c;this.showFeedback("Preview updated with sample diff.","info");
+        for(const[k,v]of Object.entries(p))c=c.split(k).join(v); pa.textContent=c;this.showFeedback("Preview updated with sample PR data.","info");
     }
 
     public async exportAllSettings(): Promise<void> {

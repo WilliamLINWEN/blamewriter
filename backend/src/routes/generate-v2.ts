@@ -346,7 +346,8 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
         .replace('{{author}}', prData.author?.display_name || 'Unknown')
         .replace('{{source_branch}}', prData.source?.branch?.name || 'Unknown')
         .replace('{{destination_branch}}', prData.destination?.branch?.name || 'Unknown')
-        .replace('{{diff}}', prData.diff.diff || 'No diff available');
+        .replace('{{diff}}', prData.diff.diff || 'No diff available')
+        .replace('{DIFF_CONTENT}', prData.diff.diff || 'No diff available'); // Support both formats
 
       const generatedResult = await openaiClient.generatePRDescription(
         processedTemplate,
@@ -405,7 +406,8 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
             description: prData.description,
             author: prData.author?.display_name,
             source_branch: prData.source?.branch?.name,
-            destination_branch: prData.destination?.branch?.name
+            destination_branch: prData.destination?.branch?.name,
+            diff: prData.diff.diff
           }
         },
         llmProvider: {

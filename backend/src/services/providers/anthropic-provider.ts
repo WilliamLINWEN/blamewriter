@@ -58,7 +58,7 @@ export class AnthropicProvider extends BaseLLMProvider {
     this.anthropicConfig = mergedConfig as AnthropicProviderConfig;
     
     // Validate API key
-    if (!config.apiKey || typeof config.apiKey !== 'string' || config.apiKey.trim() === '') {
+    if (!config.apiKey || config.apiKey.trim() === '') {
       throw new LLMProviderError(
         LLMProviderType.ANTHROPIC,
         LLMProviderErrorCode.INVALID_API_KEY,
@@ -69,7 +69,7 @@ export class AnthropicProvider extends BaseLLMProvider {
     // Initialize LangChain ChatAnthropic client
     this.client = new ChatAnthropic({
       anthropicApiKey: config.apiKey.trim(),
-      modelName: mergedConfig.model || 'claude-3-sonnet-20240229',
+      model: mergedConfig.model || 'claude-3-sonnet-20240229',
       temperature: 0.7,
       maxRetries: mergedConfig.maxRetries || 3,
       ...(mergedConfig.baseUrl && { baseURL: mergedConfig.baseUrl }),
@@ -93,7 +93,7 @@ export class AnthropicProvider extends BaseLLMProvider {
     if (opts.model !== this.client.modelName) {
       this.client = new ChatAnthropic({
         anthropicApiKey: this.anthropicConfig.apiKey,
-        modelName: opts.model,
+        model: opts.model,
         temperature: opts.temperature || 0.7,
         maxRetries: this.anthropicConfig.maxRetries || 3,
         ...(this.anthropicConfig.baseUrl && { baseURL: this.anthropicConfig.baseUrl }),
@@ -163,7 +163,7 @@ export class AnthropicProvider extends BaseLLMProvider {
 
       const testClient = new ChatAnthropic({
         anthropicApiKey: this.anthropicConfig.apiKey,
-        modelName: 'claude-3-haiku-20240307', // Use cheaper model for testing
+        model: 'claude-3-haiku-20240307', // Use cheaper model for testing
         maxTokens: 5,
       });
 

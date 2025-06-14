@@ -265,7 +265,7 @@ class PopupController {
 
   private isValidToken(token: string): boolean {
     if (!token || token.length < 20) return false;
-    return /^[a-zA-Z0-9_-]+$/.test(token);
+    return true
   }
 
   private async handleGenerateClick(): Promise<void> {
