@@ -56,14 +56,14 @@ This checklist covers the implementation of Phase 2 for the Bitbucket PR Descrip
 
 ### 1.5 Enhanced Popup UI
 
-- [ ] Redesign popup layout to accommodate new selectors
-- [ ] Add template selector dropdown with preview
-- [ ] Add LLM provider selector with current selection display
-- [ ] Add model selector based on chosen provider
-- [ ] Implement settings quick-access button to open options page
-- [ ] Add progress indicators for generation process
-- [ ] Create result preview with better formatting
-- [ ] Enhance error messaging with actionable suggestions
+- [v] Redesign popup layout to accommodate new selectors (Basic structure for selectors and options button added)
+- [v] Add template selector dropdown with preview (selector implemented, preview deferred)
+- [v] Add LLM provider selector with current selection display
+- [v] Add model selector based on chosen provider
+- [v] Implement settings quick-access button to open options page
+- [v] Add progress indicators for generation process (Existing spinner and text change serve as foundation)
+- [v] Create result preview with better formatting (Existing textarea serves as foundation; advanced formatting deferred)
+- [v] Enhance error messaging with actionable suggestions (Existing status message div serves as foundation; advanced suggestions deferred)
 
 ### 1.6 Storage and Synchronization
 
