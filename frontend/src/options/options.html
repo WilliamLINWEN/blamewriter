@@ -20,6 +20,75 @@
 
         <div id="template-form-container">
             <h3 id="template-form-heading">Add New Template</h3>
+            
+            <!-- Template Suggestions Section -->
+            <div id="template-suggestions" style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #495057;">💡 Template Variables & Examples</h4>
+                
+                <details style="margin-bottom: 15px;">
+                    <summary style="cursor: pointer; font-weight: bold; color: #007bff;">📝 Currently Available Variables</summary>
+                    <div style="margin-top: 10px; font-family: monospace; font-size: 12px;">
+                        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
+                            <strong>✅ Currently Supported:</strong><br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{DIFF_CONTENT}</code> - The complete git diff content showing all code changes
+                        </div>
+                        
+                        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 10px;">
+                            <strong>🚧 Coming in Future Updates:</strong><br>
+                            <small style="color: #856404;">
+                                Variables like <code>{pr_title}</code>, <code>{file_changes}</code>, <code>{commit_messages}</code>, <code>{author}</code>, etc. are planned for future releases.
+                            </small>
+                        </div>
+                    </div>
+                </details>
+                
+                <details style="margin-bottom: 15px;">
+                    <summary style="cursor: pointer; font-weight: bold; color: #28a745;">🚀 Feature Development Template</summary>
+                    <textarea readonly style="width: 100%; height: 150px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## 🎯 Overview
+Based on the code changes in this PR, please provide a comprehensive description.
+
+## � Changes Made
+Please analyze the following diff and describe the key changes:
+
+{DIFF_CONTENT}
+
+## 🧪 Testing
+Please suggest appropriate testing strategies based on the code changes.
+
+## 📦 Deployment Notes
+Please identify any deployment considerations from the changes.
+
+## 🔗 Related
+Please mention any related issues or dependencies if evident from the code.</textarea>
+                </details>
+                
+                <details style="margin-bottom: 15px;">
+                    <summary style="cursor: pointer; font-weight: bold; color: #dc3545;">🐛 Bug Fix Template</summary>
+                    <textarea readonly style="width: 100%; height: 120px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## 🐛 Bug Fix Summary
+Please analyze the code changes and describe what bug was fixed.
+
+## 🔍 Root Cause & Solution
+Based on the following diff, explain the root cause and solution:
+
+{DIFF_CONTENT}
+
+## ✅ Verification
+Please suggest how to verify this fix works correctly.</textarea>
+                </details>
+                
+                <details>
+                    <summary style="cursor: pointer; font-weight: bold; color: #6f42c1;">🔧 Refactoring Template</summary>
+                    <textarea readonly style="width: 100%; height: 100px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## ♻️ Refactoring Summary
+Please describe the refactoring changes and improvements made.
+
+## 📝 Code Changes
+{DIFF_CONTENT}
+
+## 🎯 Benefits
+Please explain the benefits of these refactoring changes.</textarea>
+                </details>
+            </div>
+
             <input type="hidden" id="template-id" name="template-id">
             <div>
                 <label for="template-name">Name:</label>

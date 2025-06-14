@@ -235,7 +235,20 @@ class OptionsController implements IOptionsController {
         } catch (e) { this.handleError(e, "Failed to load templates."); }
     }
     private async createAndLoadDefaultPresets(): Promise<void> {
-        const d:Template[]=[{id:this.generateId(),name:"Default Feature PR",content:"## Overview\n{pr_body}\n\n## Background\n{background}\n\n## Changes Made\n{changes}\n\n## Testing\n{tests}",metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}},{id:this.generateId(),name:"Simple Bugfix PR",content:"## Issue Fixed\n{pr_title}\n\n## Description of Fix\n{changes}",metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}];
+        const d:Template[]=[
+            {
+                id:this.generateId(),
+                name:"Default Feature PR",
+                content:"## 🎯 Overview\nPlease analyze the following code changes and provide a comprehensive PR description.\n\n## 📝 Code Changes\n{DIFF_CONTENT}\n\n## 🧪 Testing Suggestions\nPlease suggest appropriate testing based on the changes above.\n\n## 📦 Deployment Notes\nPlease identify any deployment considerations.",
+                metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+            },
+            {
+                id:this.generateId(),
+                name:"Simple Bugfix PR",
+                content:"## 🐛 Bug Fix Summary\nPlease describe what bug was fixed based on the code changes.\n\n## 🔍 Changes Made\n{DIFF_CONTENT}\n\n## ✅ Verification\nPlease suggest how to verify this fix works correctly.",
+                metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+            }
+        ];
         try { await saveToStorage({templates:d}); this.templates=d; this.renderTemplateList(); this.showFeedback("Loaded default templates.","info");
         } catch (e) { this.handleError(e, "Failed to save default templates."); }
     }
@@ -266,8 +279,35 @@ class OptionsController implements IOptionsController {
     }
     public previewTemplate():void{
         const ci=document.getElementById('template-content')as HTMLTextAreaElement,pa=document.getElementById('template-preview-area'); if(!ci||!pa){this.showFeedback("Preview elements missing.","error");return;} let c=ci.value;
-        const p={'{branch_name}':'dev/branch','{pr_title}':'Title','{pr_body}':'Body','{diff_summary}':'Diff','{commit_messages}':'Commits','{file_changes}':'Files','{background}':'BG','{changes}':'Changes','{tests}':'Tests'};
-        for(const[k,v]of Object.entries(p))c=c.split(k).join(v); pa.textContent=c;this.showFeedback("Preview updated.","info");
+        const p={
+            '{DIFF_CONTENT}': `diff --git a/src/auth/middleware.ts b/src/auth/middleware.ts
+new file mode 100644
+index 0000000..abcd123
+--- /dev/null
++++ b/src/auth/middleware.ts
+@@ -0,0 +1,45 @@
++import jwt from 'jsonwebtoken';
++import { Request, Response, NextFunction } from 'express';
++
++export interface AuthRequest extends Request {
++  user?: { id: string; email: string };
++}
++
+
+diff --git a/src/models/User.ts b/src/models/User.ts
+index 1234567..abcd890 100644
+--- a/src/models/User.ts
++++ b/src/models/User.ts
+@@ -5,6 +5,7 @@ export interface User {
+   id: string;
+   email: string;
+   password: string;
++  createdAt: Date;
+ }
+ 
+ export class UserModel {`
+        };
+        for(const[k,v]of Object.entries(p))c=c.split(k).join(v); pa.textContent=c;this.showFeedback("Preview updated with sample diff.","info");
     }
 
     public async exportAllSettings(): Promise<void> {
