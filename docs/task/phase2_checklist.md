@@ -67,13 +67,13 @@ This checklist covers the implementation of Phase 2 for the Bitbucket PR Descrip
 
 ### 1.6 Storage and Synchronization
 
-- [ ] Define storage schema for templates, providers, and preferences
-- [ ] Implement storage versioning for future migrations
-- [ ] Create storage utility functions for get/set operations
-- [ ] Add storage change listeners for real-time UI updates
-- [ ] Implement storage quota management and cleanup
-- [ ] Add data export/import functionality for user backups
-- [ ] Create storage integrity validation
+- [v] Define storage schema for templates, providers, and preferences (Formalized in storage_schema.ts)
+- [v] Implement storage versioning for future migrations (basic version number stored in AppSettings)
+- [v] Create storage utility functions for get/set operations (getFromStorage, saveToStorage in storage_utils.ts)
+- [v] Add storage change listeners for real-time UI updates (options & popup listen for sync changes)
+- [~] Implement storage quota management and cleanup (Deferred - Relies on basic error handling for now)
+- [v] Add data export/import functionality for user backups (unified export/import for all settings)
+- [~] Create storage integrity validation (Deferred - Basic structural checks in import; full validation complex)
 
 ---
 

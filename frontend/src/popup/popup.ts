@@ -1,5 +1,13 @@
 // Popup script for Bitbucket PR Helper extension
 
+import {
+    Template,
+    UserLLMConfig,
+    LLMProvider as LLMProviderDef,
+    ModelDetail
+} from '../common/storage_schema';
+import { getFromStorage } from '../common/storage_utils';
+
 interface BitbucketPRInfo {
   workspace: string;
   repo: string;
@@ -7,12 +15,10 @@ interface BitbucketPRInfo {
   fullUrl: string;
 }
 
-// Updated GenerateRequest interface
 interface GenerateRequest {
   action: 'generate';
-  prUrl: string; // Changed from 'url'
+  prUrl: string;
   token: string;
-
   templateContent: string;
   llmConfig: {
     providerId: string;
@@ -25,25 +31,6 @@ interface GenerateRequest {
 interface GenerateResponse {
   description?: string;
   error?: string;
-}
-
-interface Template {
-  id: string;
-  name: string;
-  content: string;
-}
-
-interface ModelDetail { id: string; name: string; }
-interface LLMProviderDef {
-    id: string;
-    name: string;
-    models: ModelDetail[];
-}
-interface UserLLMConfig {
-    providerId: string | null;
-    apiKey: string | null;
-    selectedModelId: string | null;
-    customEndpoint: string | null;
 }
 
 class PopupController {
@@ -70,6 +57,7 @@ class PopupController {
     this.initializeElements();
     this.setupEventListeners();
     this.initializeState();
+    this.setupStorageListeners(); // Added
   }
 
   private initializeElements(): void {
@@ -92,7 +80,6 @@ class PopupController {
         !this.llmProviderSelect || !this.llmModelSelect) {
       console.error('Required DOM elements not found');
       this.showError('Interface initialization failed.');
-      return;
     }
   }
 
@@ -110,43 +97,62 @@ class PopupController {
     }
     if (this.llmProviderSelect) {
         this.llmProviderSelect.addEventListener('change', () => {
-            if(this.currentUserLLMConfig) { // Update internal state if config is loaded
+            if(this.currentUserLLMConfig) {
                 this.currentUserLLMConfig.providerId = this.llmProviderSelect.value || null;
                 this.currentUserLLMConfig.selectedModelId = null;
-            } else { // If config wasn't loaded, initialize a temporary one for UI behavior
+            } else {
                 this.currentUserLLMConfig = { providerId: this.llmProviderSelect.value || null, apiKey: null, selectedModelId: null, customEndpoint: null };
             }
             this.renderLLMModelSelection();
-            this.validateTokenInput(); // Re-validate to enable/disable generate button
+            this.validateTokenInput();
         });
     }
     if (this.llmModelSelect) {
         this.llmModelSelect.addEventListener('change', () => {
-             if(this.currentUserLLMConfig) { // Should always exist if provider was selected
+             if(this.currentUserLLMConfig) {
                 this.currentUserLLMConfig.selectedModelId = this.llmModelSelect.value || null;
              }
-             this.validateTokenInput(); // Re-validate
+             this.validateTokenInput();
         });
     }
      if (this.templateSelect) {
-        this.templateSelect.addEventListener('change', () => this.validateTokenInput()); // Re-validate
+        this.templateSelect.addEventListener('change', () => this.validateTokenInput());
     }
   }
 
   private initializeState(): void {
     this.checkCurrentPage();
-    this.validateTokenInput(); // Initial validation for button state
+    this.validateTokenInput();
     this.hideActionButtons();
     this.clearStatus();
     this.loadAndRenderTemplates();
     this.loadAndRenderLLMConfig();
   }
 
+  private setupStorageListeners(): void {
+    // @ts-ignore
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== 'sync') {
+            return;
+        }
+        console.log("Popup: Storage changed in 'sync' area:", changes);
+
+        if (changes.userLLMConfig) {
+            console.log("Popup: UserLLMConfig changed. Reloading LLM config for popup.");
+            this.loadAndRenderLLMConfig().catch(err => console.error("Popup: Error reloading LLM config on change:", err));
+        }
+        if (changes.templates) {
+            console.log("Popup: Templates changed. Reloading templates for popup.");
+            this.loadAndRenderTemplates().catch(err => console.error("Popup: Error reloading templates on change:", err));
+        }
+    });
+  }
+
   private initializeLLMProviderData(): void {
     this.availableLLMProviders = [
-        { id: 'openai', name: 'OpenAI', models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ] },
-        { id: 'anthropic', name: 'Anthropic (Claude)', models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ] },
-        { id: 'ollama', name: 'Ollama (Local)', models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'} ] }
+        { id: 'openai', name: 'OpenAI', models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresApiKey: true, requiresCustomEndpoint: false },
+        { id: 'anthropic', name: 'Anthropic (Claude)', models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresApiKey: true, requiresCustomEndpoint: false },
+        { id: 'ollama', name: 'Ollama (Local)', models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'} ], requiresApiKey: false, requiresCustomEndpoint: true }
     ];
   }
 
@@ -158,9 +164,8 @@ class PopupController {
     this.llmProviderSelect.innerHTML = '<option value="">-- Loading --</option>';
     this.llmModelSelect.innerHTML = '<option value="">-- Wait --</option>';
 
-    try { // @ts-ignore
-        const result = await chrome.storage.sync.get('userLLMConfig');
-        this.currentUserLLMConfig = (result.userLLMConfig as UserLLMConfig) || { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null };
+    try {
+        this.currentUserLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null });
 
         this.llmProviderSelect.innerHTML = '<option value="">-- Select Provider --</option>';
         this.availableLLMProviders.forEach(p => {
@@ -191,20 +196,13 @@ class PopupController {
     if (provider && provider.models && provider.models.length > 0) {
         const defaultOpt = document.createElement('option'); defaultOpt.value = ""; defaultOpt.textContent = "-- Select Model --";
         this.llmModelSelect.appendChild(defaultOpt);
-        provider.models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model.id; option.textContent = model.name;
-            this.llmModelSelect.appendChild(option);
-        });
+        provider.models.forEach(model => { const o=document.createElement('option');o.value=model.id;o.textContent=model.name;this.llmModelSelect.appendChild(o);});
         if (this.currentUserLLMConfig && this.currentUserLLMConfig.providerId === selectedProviderId && this.currentUserLLMConfig.selectedModelId) {
-            const modelExists = provider.models.some(m => m.id === this.currentUserLLMConfig!.selectedModelId);
-            if(modelExists) this.llmModelSelect.value = this.currentUserLLMConfig.selectedModelId;
+            if(provider.models.some(m => m.id === this.currentUserLLMConfig!.selectedModelId)) this.llmModelSelect.value = this.currentUserLLMConfig.selectedModelId;
         }
         this.llmModelSelect.disabled = false;
     } else {
-        const option = document.createElement('option');
-        option.value = ''; option.textContent = selectedProviderId ? '-- No Models --' : '-- Select Provider --';
-        this.llmModelSelect.appendChild(option);
+        const o=document.createElement('option');o.value='';o.textContent=selectedProviderId ? '-- No Models --':'-- Select Provider --';this.llmModelSelect.appendChild(o);
     }
   }
 
@@ -212,22 +210,12 @@ class PopupController {
     if (!this.templateSelect) return;
     this.templateSelect.disabled = true;
     this.templateSelect.innerHTML = '<option value="">-- Loading Templates --</option>';
-    try { // @ts-ignore
-        const result = await chrome.storage.sync.get('templates');
-        this.availableTemplates = (result.templates as Template[]) || [];
+    try {
+        this.availableTemplates = await getFromStorage('templates', []);
         this.templateSelect.innerHTML = '';
-        if (this.availableTemplates.length === 0) {
-            const option = document.createElement('option'); option.value = '';
-            option.textContent = '-- No Templates Configured --';
-            this.templateSelect.appendChild(option); this.templateSelect.disabled = true;
-        } else {
-            const defaultOption = document.createElement('option'); defaultOption.value = '';
-            defaultOption.textContent = '-- Select a Template --';
-            this.templateSelect.appendChild(defaultOption);
-            this.availableTemplates.forEach(template => {
-                const option = document.createElement('option'); option.value = template.id;
-                option.textContent = template.name; this.templateSelect.appendChild(option);
-            });
+        if (this.availableTemplates.length === 0) { const o=document.createElement('option');o.value='';o.textContent='-- No Templates Configured --';this.templateSelect.appendChild(o);this.templateSelect.disabled=true; }
+        else { const dO=document.createElement('option');dO.value='';dO.textContent='-- Select a Template --';this.templateSelect.appendChild(dO);
+            this.availableTemplates.forEach(t => {const o=document.createElement('option');o.value=t.id;o.textContent=t.name;this.templateSelect.appendChild(o);});
             this.templateSelect.disabled = false;
         }
     } catch (error) {
@@ -235,6 +223,7 @@ class PopupController {
         this.templateSelect.disabled = true; this.showError("Failed to load templates.");
     }
   }
+
   private async checkCurrentPage(): Promise<void> {
     try { // @ts-ignore
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -245,12 +234,14 @@ class PopupController {
       this.showInfo(`PR: ${prInfo.workspace}/${prInfo.repo}#${prInfo.prId}`);
     } catch (error) { this.showError('Error checking page.'); }
   }
+
   private extractPRInfoFromUrl(url: string): BitbucketPRInfo | null {
     const prUrlPattern = /^https:\/\/bitbucket\.org\/([^\/]+)\/([^\/]+)\/pull-requests\/(\d+)/;
     const match = url.match(prUrlPattern);
     if (!match) return null;
     return { workspace: match[1]!, repo: match[2]!, prId: match[3]!, fullUrl: url };
   }
+
   private validateTokenInput(): void {
     const tokenValue = this.tokenInput.value.trim();
     const isValid = this.isValidToken(tokenValue);
@@ -262,13 +253,16 @@ class PopupController {
 
     if (tokenValue.length > 0) {
       this.tokenInput.classList.toggle('invalid', !isValid);
-      if (!isValid) this.showError('Invalid Bitbucket OAuth token format.');
-      // else this.clearStatus(); // Don't clear if other errors exist
+      if (!isValid && this.statusMessage.textContent === '') { // Only show token error if no other error is shown
+        this.showError('Invalid Bitbucket OAuth token format.');
+      } else if (isValid && this.statusMessage.className.includes('error')) { // Clear if valid and error was shown
+         // this.clearStatus(); // This might clear other important messages, be cautious
+      }
     } else {
       this.tokenInput.classList.remove('invalid');
-      // this.clearStatus(); // Don't clear if other errors exist
     }
   }
+
   private isValidToken(token: string): boolean {
     if (!token || token.length < 20) return false;
     return /^[a-zA-Z0-9_-]+$/.test(token);
@@ -277,23 +271,27 @@ class PopupController {
   private async handleGenerateClick(): Promise<void> {
     try {
       const tokenValue = this.tokenInput.value.trim();
-      if (!tokenValue || !this.isValidToken(tokenValue)) { this.showError('Invalid OAuth token.'); return; }
+      // ValidateTokenInput should have already handled generateButton.disabled state
+      if (this.generateButton.disabled) {
+          if (!tokenValue || !this.isValidToken(tokenValue)) this.showError('Invalid OAuth token.');
+          else if (!this.templateSelect.value) this.showError('Please select a template.');
+          else if (!this.llmProviderSelect.value) this.showError('Please select an LLM Provider.');
+          else if (!this.llmModelSelect.value) this.showError('Please select an LLM Model.');
+          else this.showError('Please ensure all fields and selections are valid.');
+          return;
+      }
       // @ts-ignore
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
       if (!currentTab || !currentTab.url) { this.showError('Cannot access current page.'); return; }
-      const prInfo = this.extractPRInfoFromUrl(currentTab.url);
+      const prInfo = this.extractPRInfoFromUrl(currentTab.url); // Already checked by checkCurrentPage for button state too
       if (!prInfo) { this.showError('Not a Bitbucket PR page.'); return; }
 
-      const selectedTemplateId = this.templateSelect.value;
-      const selectedTemplate = this.availableTemplates.find(t => t.id === selectedTemplateId);
-      if (!selectedTemplate) { this.showError("Please select a template."); return; }
+      const selectedTemplate = this.availableTemplates.find(t => t.id === this.templateSelect.value);
+      if (!selectedTemplate) { this.showError("Selected template not found."); return; } // Should be caught by button state
 
       const selectedProviderId = this.llmProviderSelect.value;
       const selectedModelId = this.llmModelSelect.value;
-
-      if (!selectedProviderId) { this.showError('Please select an LLM provider.'); return; }
-      if (!selectedModelId) { this.showError('Please select an LLM model.'); return; }
 
       if (!this.currentUserLLMConfig || this.currentUserLLMConfig.providerId !== selectedProviderId) {
           this.showError('LLM configuration error. Please save settings in Options page.'); return;
@@ -357,16 +355,16 @@ class PopupController {
                                   !this.templateSelect.value ||
                                   !this.llmProviderSelect.value ||
                                   !this.llmModelSelect.value;
-    this.generateButton.disabled = loading || commonDisableCondition;
-    this.loadingSpinner.style.display = loading ? 'block' : 'none';
-    this.buttonText.textContent = loading ? 'Generating...' : 'Generate Description';
+    if(this.generateButton) this.generateButton.disabled = loading || commonDisableCondition;
+    if(this.loadingSpinner) this.loadingSpinner.style.display = loading ? 'block' : 'none';
+    if(this.buttonText) this.buttonText.textContent = loading ? 'Generating...' : 'Generate Description';
   }
   private showActionButtons(): void { if (this.actionButtons) this.actionButtons.style.display = 'flex'; }
   private hideActionButtons(): void { if (this.actionButtons) this.actionButtons.style.display = 'none'; }
-  private showSuccess(message: string): void { this.statusMessage.textContent = message; this.statusMessage.className = 'status-message success'; }
-  private showError(message: string): void { this.statusMessage.textContent = String(message || 'An error occurred'); this.statusMessage.className = 'status-message error'; }
-  private showInfo(message: string): void { this.statusMessage.textContent = message; this.statusMessage.className = 'status-message info'; }
-  private clearStatus(): void { this.statusMessage.textContent = ''; this.statusMessage.className = 'status-message'; }
+  private showSuccess(message: string): void { if(this.statusMessage) {this.statusMessage.textContent = message; this.statusMessage.className = 'status-message success';} }
+  private showError(message: string): void { if(this.statusMessage) {this.statusMessage.textContent = String(message || 'An error occurred'); this.statusMessage.className = 'status-message error';} }
+  private showInfo(message: string): void { if(this.statusMessage) {this.statusMessage.textContent = message; this.statusMessage.className = 'status-message info';} }
+  private clearStatus(): void { if(this.statusMessage){this.statusMessage.textContent = ''; this.statusMessage.className = 'status-message';} }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
