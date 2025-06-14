@@ -141,6 +141,7 @@ class OptionsController implements IOptionsController {
         this.llmProviders = [
             { id: 'openai', name: 'OpenAI', apiKeyLabel: 'OpenAI API Key', requiresApiKey: true, models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresCustomEndpoint: false, helpText: 'Get API key from platform.openai.com.' },
             { id: 'anthropic', name: 'Anthropic (Claude)', apiKeyLabel: 'Anthropic API Key', requiresApiKey: true, models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresCustomEndpoint: false, helpText: 'Get API key from console.anthropic.com.' },
+            { id: 'xai', name: 'xAI (Grok)', apiKeyLabel: 'xAI API Key', requiresApiKey: true, models: [ {id: 'grok-beta', name: 'Grok Beta'}, {id: 'grok-vision-beta', name: 'Grok Vision Beta'} ], requiresCustomEndpoint: false, helpText: 'Get API key from x.ai console.' },
             { id: 'ollama', name: 'Ollama (Local)', requiresApiKey: false, models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'}, {id: 'phi3', name: 'Phi-3'} ], requiresCustomEndpoint: true, customEndpointLabel: 'Ollama Server URL', helpText: 'Ensure Ollama server is running.' },
         ];
     }

@@ -90,7 +90,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     console.log(`📏 [OpenAI Provider] Original diff size: ${diffContent.length} characters`);
 
     // Update client with new model if different
-    if (opts.model !== this.client.modelName) {
+    if (opts.model !== this.client.model) {
       this.client = new ChatOpenAI({
         openAIApiKey: this.openaiConfig.apiKey,
         modelName: opts.model,
@@ -116,6 +116,8 @@ export class OpenAIProvider extends BaseLLMProvider {
     const prompt = this.processTemplate(template, processedDiff);
 
     try {
+      // Log the prompt for debugging
+      console.log(`📝 [OpenAI Provider] Generated prompt:\n${prompt}`);
       console.log(`🌐 [OpenAI Provider] Sending request to OpenAI...`);
 
       const response = await this.client.invoke([new HumanMessage(prompt)]);
