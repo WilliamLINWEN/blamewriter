@@ -10,6 +10,7 @@ module.exports = (env, argv) => {
       popup: './src/popup/popup.ts',
       background: './src/background/background.ts',
       content: './src/content/content.ts',
+      'options/options': './src/options/options.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -57,6 +58,9 @@ module.exports = (env, argv) => {
           {
             from: 'src/options/',
             to: 'options/',
+            globOptions: {
+              ignore: ['**/*.ts'],
+            },
           },
         ],
       }),
