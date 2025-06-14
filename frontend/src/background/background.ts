@@ -3,8 +3,15 @@
 
 interface GenerateRequest {
   action: 'generate';
-  url: string;
+  prUrl: string;
   token: string;
+  templateContent: string;
+  llmConfig: {
+    providerId: string;
+    modelId: string;
+    apiKey: string | null;
+    customEndpoint: string | null;
+  };
 }
 
 interface GenerateResponse {
@@ -15,16 +22,39 @@ interface GenerateResponse {
 interface ApiRequestBody {
   prUrl: string;
   bitbucketToken: string;
+  template: {
+    content: string;
+  };
+  llmConfig: {
+    providerId: string;
+    modelId: string;
+    apiKey: string | null;
+    customEndpoint: string | null;
+  };
 }
 
 interface ApiResponseBody {
-  description?: string;
-  error?: string;
+  success: boolean;
+  data?: {
+    description: string;
+    metadata: any;
+    diffStats: any;
+    template: any;
+    llmProvider: any;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details: string;
+    category: string;
+    retryable: boolean;
+    suggestedAction: string;
+  };
 }
 
 class BackgroundService {
   private readonly API_BASE_URL = 'http://localhost:3001';
-  private readonly GENERATE_ENDPOINT = '/api/v1/generate-mvp';
+  private readonly GENERATE_ENDPOINT = '/api/v2/generate';
   private readonly REQUEST_TIMEOUT = 60000; // 60 seconds
 
   constructor() {
@@ -83,7 +113,7 @@ class BackgroundService {
 
     try {
       // Make HTTP request to backend API
-      const apiResponse = await this.callBackendAPI(request.url, request.token);
+      const apiResponse = await this.callBackendAPI(request.prUrl, request.token, request.templateContent, request.llmConfig);
       return this.processApiResponse(apiResponse);
     } catch (error) {
       console.error('Error in generate request:', error);
@@ -92,7 +122,7 @@ class BackgroundService {
   }
 
   private validateGenerateRequest(request: GenerateRequest): string | null {
-    if (!request.url) {
+    if (!request.prUrl) {
       return 'URL is required';
     }
 
@@ -102,7 +132,7 @@ class BackgroundService {
 
     // Validate URL format
     const urlPattern = /^https:\/\/bitbucket\.org\/[^\/]+\/[^\/]+\/pull-requests\/\d+/;
-    if (!urlPattern.test(request.url)) {
+    if (!urlPattern.test(request.prUrl)) {
       return 'Invalid Bitbucket PR URL format';
     }
 
@@ -114,10 +144,24 @@ class BackgroundService {
     return null;
   }
 
-  private async callBackendAPI(prUrl: string, bitbucketToken: string): Promise<Response> {
+  private async callBackendAPI(
+    prUrl: string, 
+    bitbucketToken: string, 
+    templateContent: string, 
+    llmConfig: {
+      providerId: string;
+      modelId: string;
+      apiKey: string | null;
+      customEndpoint: string | null;
+    }
+  ): Promise<Response> {
     const requestBody: ApiRequestBody = {
       prUrl: prUrl,
       bitbucketToken: bitbucketToken,
+      template: {
+        content: templateContent,
+      },
+      llmConfig: llmConfig,
     };
 
     console.log('Making API request to:', `${this.API_BASE_URL}${this.GENERATE_ENDPOINT}`);
@@ -158,12 +202,13 @@ class BackgroundService {
       const data: ApiResponseBody = await response.json();
       console.log('API response data:', data);
 
-      if (data.error) {
-        return { error: data.error };
+      // Handle new v2 API format
+      if (data.success === false && data.error) {
+        return { error: data.error.message };
       }
 
-      if (data.description) {
-        return { description: data.description };
+      if (data.success === true && data.data?.description) {
+        return { description: data.data.description };
       }
 
       return { error: 'Invalid response format from server' };
@@ -183,7 +228,12 @@ class BackgroundService {
       
       // Check if backend provides specific error message
       if (errorData && typeof errorData === 'object') {
-        // Handle different error response formats
+        // Handle v2 API error format
+        if (errorData.success === false && errorData.error) {
+          return { error: errorData.error.message || errorData.error.details || 'Unknown error from server' };
+        }
+        
+        // Handle different error response formats (backward compatibility)
         if (errorData.error && typeof errorData.error === 'string') {
           return { error: errorData.error };
         }
