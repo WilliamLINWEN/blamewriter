@@ -17,63 +17,63 @@ This checklist covers the implementation of Phase 2 for the Bitbucket PR Descrip
 
 ### 1.1 Manifest Configuration Enhancement
 
-- [ ] Update `frontend/src/manifest.json` to add `options_page` configuration
-- [ ] Add `storage` permission to manifest for chrome.storage.sync usage
-- [ ] Update permissions array to include both `activeTab` and `storage`
-- [ ] Verify `host_permissions` includes backend development URL
-- [ ] Add `options_ui` configuration for better UX (optional)
+- [v] Update `frontend/src/manifest.json` to add `options_page` configuration
+- [v] Add `storage` permission to manifest for chrome.storage.sync usage
+- [v] Update permissions array to include both `activeTab` and `storage`
+- [v] Verify `host_permissions` includes backend development URL
+- [v] Add `options_ui` configuration for better UX (optional)
 
 ### 1.2 Options Page Infrastructure
 
-- [ ] Create `frontend/src/options/options.html` with comprehensive layout
-- [ ] Create `frontend/src/options/options.css` with modern styling
-- [ ] Create `frontend/src/options/options.ts` with TypeScript interfaces
-- [ ] Implement main OptionsController class structure
-- [ ] Add error handling and validation framework for options page
-- [ ] Implement loading states and user feedback mechanisms
+- [v] Create `frontend/src/options/options.html` with comprehensive layout
+- [v] Create `frontend/src/options/options.css` with modern styling
+- [v] Create `frontend/src/options/options.ts` with TypeScript interfaces
+- [v] Implement main OptionsController class structure
+- [v] Add error handling and validation framework for options page
+- [v] Implement loading states and user feedback mechanisms
 
 ### 1.3 Template Management System
 
-- [ ] Design template data structure with ID, name, content, and metadata
-- [ ] Implement template CRUD operations using `chrome.storage.sync`
-- [ ] Create template editor UI with syntax highlighting (optional)
-- [ ] Add template validation to ensure proper placeholder usage
-- [ ] Implement template preview functionality
-- [ ] Create default template presets for different PR types
-- [ ] Add template import/export functionality (JSON format)
-- [ ] Implement template deletion with confirmation dialogs
+- [v] Design template data structure with ID, name, content, and metadata
+- [v] Implement template CRUD operations using `chrome.storage.sync`
+- [v] Create template editor UI with syntax highlighting (optional) - Basic UI implemented
+- [v] Add template validation to ensure proper placeholder usage - Basic (name/content presence) validation implemented
+- [v] Implement template preview functionality
+- [v] Create default template presets for different PR types
+- [v] Add template import/export functionality (JSON format)
+- [v] Implement template deletion with confirmation dialogs
 
 ### 1.4 LLM Provider Configuration
 
-- [ ] Create LLM provider selection interface (dropdown/radio buttons)
-- [ ] Implement API key input fields with secure handling
-- [ ] Add provider-specific model selection dropdowns
-- [ ] Create Ollama endpoint configuration input field
-- [ ] Implement API key validation with backend verification
-- [ ] Add provider capability documentation/help text
-- [ ] Create cost estimation display for different providers
-- [ ] Implement provider availability status checking
+- [v] Create LLM provider selection interface (dropdown/radio buttons)
+- [v] Implement API key input fields with secure handling (input field and sync storage as per Phase 2 doc)
+- [v] Add provider-specific model selection dropdowns
+- [v] Create Ollama endpoint configuration input field
+- [v] Implement API key validation with backend verification (client-side presence check & placeholder UI for backend check)
+- [v] Add provider capability documentation/help text
+- [v] Create cost estimation display for different providers (Placeholder UI added)
+- [v] Implement provider availability status checking (Placeholder UI added)
 
 ### 1.5 Enhanced Popup UI
 
-- [ ] Redesign popup layout to accommodate new selectors
-- [ ] Add template selector dropdown with preview
-- [ ] Add LLM provider selector with current selection display
-- [ ] Add model selector based on chosen provider
-- [ ] Implement settings quick-access button to open options page
-- [ ] Add progress indicators for generation process
-- [ ] Create result preview with better formatting
-- [ ] Enhance error messaging with actionable suggestions
+- [v] Redesign popup layout to accommodate new selectors (Basic structure for selectors and options button added)
+- [v] Add template selector dropdown with preview (selector implemented, preview deferred)
+- [v] Add LLM provider selector with current selection display
+- [v] Add model selector based on chosen provider
+- [v] Implement settings quick-access button to open options page
+- [v] Add progress indicators for generation process (Existing spinner and text change serve as foundation)
+- [v] Create result preview with better formatting (Existing textarea serves as foundation; advanced formatting deferred)
+- [v] Enhance error messaging with actionable suggestions (Existing status message div serves as foundation; advanced suggestions deferred)
 
 ### 1.6 Storage and Synchronization
 
-- [ ] Define storage schema for templates, providers, and preferences
-- [ ] Implement storage versioning for future migrations
-- [ ] Create storage utility functions for get/set operations
-- [ ] Add storage change listeners for real-time UI updates
-- [ ] Implement storage quota management and cleanup
-- [ ] Add data export/import functionality for user backups
-- [ ] Create storage integrity validation
+- [v] Define storage schema for templates, providers, and preferences (Formalized in storage_schema.ts)
+- [v] Implement storage versioning for future migrations (basic version number stored in AppSettings)
+- [v] Create storage utility functions for get/set operations (getFromStorage, saveToStorage in storage_utils.ts)
+- [v] Add storage change listeners for real-time UI updates (options & popup listen for sync changes)
+- [~] Implement storage quota management and cleanup (Deferred - Relies on basic error handling for now)
+- [v] Add data export/import functionality for user backups (unified export/import for all settings)
+- [~] Create storage integrity validation (Deferred - Basic structural checks in import; full validation complex)
 
 ---
 

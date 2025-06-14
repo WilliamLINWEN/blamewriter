@@ -28,6 +28,7 @@ body {
     text-align: center;
     border-bottom: 1px solid #e0e6ed;
     padding-bottom: 16px;
+    position: relative; /* For positioning the button */
 }
 
 .header h1 {
@@ -42,6 +43,66 @@ body {
     font-size: 13px;
     color: #6b778c;
 }
+
+/* Options Button in Header */
+.options-button {
+    position: absolute;
+    top: 10px; /* Adjust as needed */
+    right: 10px; /* Adjust as needed */
+    padding: 6px 10px;
+    font-size: 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.options-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* Settings Selectors Container */
+.settings-selectors-container {
+    padding: 10px;
+    border: 1px solid #dfe1e6; /* More permanent border */
+    margin-bottom: 15px; /* Space before the form section */
+    border-radius: 6px;
+}
+
+.popup-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* Matches .input-group from existing styles */
+    margin-bottom: 10px; /* Spacing between groups */
+}
+
+.popup-input-group:last-child {
+    margin-bottom: 0;
+}
+
+.popup-input-group label {
+    font-weight: 500; /* Matches .input-group label */
+    color: #172b4d;
+    font-size: 13px;
+}
+
+.settings-selectors-container select {
+    padding: 8px 10px; /* Slightly less padding than token input */
+    border: 1px solid #dfe1e6;
+    border-radius: 4px; /* Smaller radius */
+    font-size: 13px;
+    background-color: #fafbfc;
+    width: 100%; /* Make select full width of its container */
+}
+
+.settings-selectors-container select:focus {
+    outline: none;
+    border-color: #0052cc;
+    box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.2);
+    background-color: #ffffff;
+}
+
 
 /* Form Section */
 .form-section {

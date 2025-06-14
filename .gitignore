@@ -173,6 +173,7 @@ web-store-assets/
 # IDE and Editor files
 .history/
 .vscode/
+.github
 .idea/
 *.swp
 *.swo

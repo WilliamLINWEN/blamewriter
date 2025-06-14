@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitbucket PR Helper Options</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <h1>Extension Options</h1>
+    <div id="options-content">
+        <h2>Template Management</h2>
+
+        <div id="template-list-container">
+            <h3>Current Templates</h3>
+            <ul id="template-list">
+                <li>No templates loaded yet.</li>
+            </ul>
+        </div>
+
+        <div id="template-form-container">
+            <h3 id="template-form-heading">Add New Template</h3>
+            <input type="hidden" id="template-id" name="template-id">
+            <div>
+                <label for="template-name">Name:</label>
+                <input type="text" id="template-name" name="template-name">
+            </div>
+            <div>
+                <label for="template-content">Content:</label>
+                <textarea id="template-content" name="template-content" rows="10" cols="50"></textarea>
+            </div>
+            <div>
+                <button type="button" id="preview-template-button">Preview Template</button>
+            </div>
+            <div id="template-preview-area" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 50px; background-color: #f9f9f9;">
+                <p><em>Preview will appear here...</em></p>
+            </div>
+            <button id="save-template-button">Save New Template</button>
+            <button type="button" id="clear-template-form-button">Clear Form / New</button>
+        </div>
+
+        <div id="template-import-export-container" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+        <h3>Manage All Settings</h3>
+        <button type="button" id="export-templates-button">Export All Settings (JSON)</button>
+        <button type="button" id="import-templates-button">Import All Settings (JSON)</button>
+            <input type="file" id="import-file-input" accept=".json" style="display: none;">
+        </div>
+
+        <hr style="margin: 20px 0;">
+        <h2>LLM Provider Configuration</h2>
+        <div id="llm-config-container">
+            <div>
+                <label for="llm-provider-select">Select LLM Provider:</label>
+                <select id="llm-provider-select" name="llm-provider-select">
+                    <option value="">-- Loading Providers --</option>
+                </select>
+            </div>
+            <div id="llm-provider-settings-container" style="margin-top: 15px; padding: 10px; border: 1px solid #eee;">
+                <p><em>Select a provider to see its settings.</em></p>
+            </div>
+            <div id="llm-provider-helptext-container" style="margin-top: 10px; font-style: italic; color: #555;">
+            </div>
+             <button type="button" id="save-llm-config-button" style="margin-top:15px;">Save LLM Configuration</button>
+        </div>
+
+        <div id="storage-management-container" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <h3>Storage Management</h3>
+            <div id="storage-info-display">
+                <div class="storage-usage-section">
+                    <h4>Storage Usage</h4>
+                    <div class="storage-usage-bar-container">
+                        <div id="storage-usage-bar" class="storage-usage-bar">
+                            <div id="storage-usage-fill" class="storage-usage-fill"></div>
+                        </div>
+                        <div id="storage-usage-text">Loading...</div>
+                    </div>
+                    <div id="storage-breakdown" class="storage-breakdown">
+                        <!-- Breakdown will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="storage-actions-section">
+                    <h4>Storage Actions</h4>
+                    <button type="button" id="refresh-storage-info-button">Refresh Usage Info</button>
+                    <button type="button" id="cleanup-storage-button">Clean Up Storage</button>
+                </div>
+                <div class="storage-settings-section">
+                    <h4>Cleanup Settings</h4>
+                    <div class="cleanup-setting">
+                        <label for="auto-cleanup-enabled">
+                            <input type="checkbox" id="auto-cleanup-enabled"> Enable automatic cleanup
+                        </label>
+                    </div>
+                    <div class="cleanup-setting">
+                        <label for="max-templates">Maximum templates to keep:</label>
+                        <input type="number" id="max-templates" min="5" max="100" value="20">
+                    </div>
+                    <div class="cleanup-setting">
+                        <label for="cleanup-strategy">Cleanup strategy:</label>
+                        <select id="cleanup-strategy">
+                            <option value="oldest">Remove oldest templates first</option>
+                            <option value="largest">Remove largest templates first</option>
+                            <option value="leastUsed">Remove least used templates first</option>
+                        </select>
+                    </div>
+                    <div class="cleanup-setting">
+                        <label for="warning-threshold">Warning threshold (%):</label>
+                        <input type="number" id="warning-threshold" min="50" max="95" value="80">
+                    </div>
+                    <button type="button" id="save-cleanup-settings-button">Save Cleanup Settings</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script src="options.js"></script>
+</body>
+</html>

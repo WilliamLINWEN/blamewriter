@@ -1,0 +1,596 @@
+/* Options page styles for Bitbucket PR Helper extension */
+
+/* Reset and base styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #172b4d;
+    background-color: #f4f5f7;
+    min-height: 100vh;
+}
+
+/* Main container */
+#options-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background-color: #ffffff;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* Typography */
+h1 {
+    color: #0052cc;
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0 0 40px 0;
+    text-align: center;
+    border-bottom: 3px solid #0052cc;
+    padding-bottom: 20px;
+}
+
+h2 {
+    color: #253858;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 40px 0 20px 0;
+    padding-left: 10px;
+    border-left: 4px solid #0052cc;
+}
+
+h3 {
+    color: #42526e;
+    font-size: 18px;
+    font-weight: 500;
+    margin: 25px 0 15px 0;
+}
+
+/* Container sections */
+#template-list-container,
+#template-form-container,
+#template-import-export-container,
+#llm-config-container {
+    background-color: #fafbfc;
+    border: 1px solid #dfe1e6;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+/* Template list styles */
+#template-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#template-list li {
+    background-color: #ffffff;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+#template-list li:hover {
+    border-color: #0052cc;
+    box-shadow: 0 2px 8px rgba(0, 82, 204, 0.1);
+}
+
+#template-list li:last-child {
+    margin-bottom: 0;
+}
+
+.template-item-name {
+    font-weight: 500;
+    color: #172b4d;
+    flex-grow: 1;
+}
+
+.template-item-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Form elements */
+label {
+    display: block;
+    font-weight: 500;
+    color: #172b4d;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+input[type="text"],
+textarea,
+select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #dfe1e6;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    background-color: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="text"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #0052cc;
+    box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 200px;
+    line-height: 1.5;
+}
+
+/* Form groups */
+#template-form-container > div {
+    margin-bottom: 20px;
+}
+
+#template-form-container > div:last-of-type {
+    margin-bottom: 0;
+}
+
+/* Buttons */
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+button:last-child {
+    margin-right: 0;
+}
+
+/* Primary buttons */
+#save-template-button,
+#save-llm-config-button {
+    background-color: #0052cc;
+    color: #ffffff;
+}
+
+#save-template-button:hover,
+#save-llm-config-button:hover {
+    background-color: #0747a6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3);
+}
+
+/* Secondary buttons */
+#preview-template-button,
+#clear-template-form-button,
+#export-templates-button,
+#import-templates-button {
+    background-color: #f4f5f7;
+    color: #42526e;
+    border: 2px solid #dfe1e6;
+}
+
+#preview-template-button:hover,
+#clear-template-form-button:hover,
+#export-templates-button:hover,
+#import-templates-button:hover {
+    background-color: #ebecf0;
+    border-color: #c1c7d0;
+    transform: translateY(-1px);
+}
+
+/* Template item action buttons */
+.template-edit-btn,
+.template-delete-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin: 0 0 0 8px;
+}
+
+.template-edit-btn {
+    background-color: #0052cc;
+    color: #ffffff;
+}
+
+.template-edit-btn:hover {
+    background-color: #0747a6;
+}
+
+.template-delete-btn {
+    background-color: #de350b;
+    color: #ffffff;
+}
+
+.template-delete-btn:hover {
+    background-color: #bf2600;
+}
+
+/* Preview area */
+#template-preview-area {
+    background-color: #f8f9fa !important;
+    border: 2px dashed #c1c7d0 !important;
+    border-radius: 6px !important;
+    padding: 20px !important;
+    margin-top: 15px !important;
+    min-height: 120px !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #42526e;
+    white-space: pre-wrap !important;
+}
+
+#template-preview-area p {
+    margin: 0;
+    font-style: italic;
+    color: #6b778c;
+}
+
+/* Import/Export section */
+#template-import-export-container {
+    border-top: 3px solid #0052cc !important;
+    margin-top: 30px !important;
+    padding-top: 25px !important;
+}
+
+/* LLM Provider settings */
+#llm-provider-settings-container {
+    background-color: #ffffff !important;
+    border: 2px solid #dfe1e6 !important;
+    border-radius: 6px !important;
+    padding: 20px !important;
+    margin-top: 15px !important;
+    min-height: 80px;
+}
+
+#llm-provider-settings-container p {
+    margin: 0;
+    color: #6b778c;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+}
+
+#llm-provider-helptext-container {
+    background-color: #e3fcef;
+    border: 1px solid #36b37e;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px !important;
+    font-style: italic !important;
+    color: #006644 !important;
+    font-size: 13px;
+}
+
+/* Horizontal rule */
+hr {
+    border: none;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #dfe1e6, transparent);
+    margin: 40px 0 !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #options-content {
+        margin: 10px;
+        padding: 20px 15px;
+    }
+    
+    h1 {
+        font-size: 24px;
+        margin-bottom: 30px;
+    }
+    
+    h2 {
+        font-size: 20px;
+        margin: 30px 0 15px 0;
+    }
+    
+    #template-list-container,
+    #template-form-container,
+    #template-import-export-container,
+    #llm-config-container {
+        padding: 15px;
+    }
+    
+    button {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .template-item-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .template-edit-btn,
+    .template-delete-btn {
+        width: 100%;
+        margin: 2px 0;
+    }
+}
+
+/* Loading and status indicators */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.success-message {
+    background-color: #e3fcef;
+    border: 1px solid #36b37e;
+    color: #006644;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.error-message {
+    background-color: #ffebe6;
+    border: 1px solid #de350b;
+    color: #bf2600;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.info-message {
+    background-color: #deebff;
+    border: 1px solid #0052cc;
+    color: #0747a6;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+/* Animation for smooth transitions */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#template-list li,
+#template-form-container,
+#llm-config-container {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Focus indicators for accessibility */
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 2px solid #0052cc;
+    outline-offset: 2px;
+}
+
+/* Disabled state */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+    background-color: #f4f5f7;
+    color: #6b778c;
+    cursor: not-allowed;
+}
+
+/* Storage Management Styles */
+.storage-usage-section,
+.storage-actions-section,
+.storage-settings-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: #ffffff;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+}
+
+.storage-usage-section h4,
+.storage-actions-section h4,
+.storage-settings-section h4 {
+    color: #42526e;
+    font-size: 16px;
+    margin: 0 0 15px 0;
+    font-weight: 500;
+}
+
+/* Storage Usage Bar */
+.storage-usage-bar-container {
+    margin-bottom: 15px;
+}
+
+.storage-usage-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #f4f5f7;
+    border: 2px solid #dfe1e6;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.storage-usage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #36b37e 0%, #ffab00 70%, #de350b 90%);
+    transition: width 0.3s ease;
+    border-radius: 8px;
+}
+
+.storage-usage-fill.warning {
+    background: linear-gradient(90deg, #ffab00 0%, #de350b 100%);
+}
+
+.storage-usage-fill.critical {
+    background-color: #de350b;
+}
+
+#storage-usage-text {
+    text-align: center;
+    font-weight: 500;
+    color: #172b4d;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+/* Storage Breakdown */
+.storage-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.storage-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #0052cc;
+}
+
+.storage-item-name {
+    font-weight: 500;
+    color: #172b4d;
+    text-transform: capitalize;
+}
+
+.storage-item-size {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    color: #6b778c;
+    font-weight: 500;
+}
+
+/* Storage Actions */
+.storage-actions-section button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+#cleanup-storage-button {
+    background-color: #ffab00;
+    color: #172b4d;
+    border: 2px solid #ffab00;
+}
+
+#cleanup-storage-button:hover {
+    background-color: #ff991f;
+    border-color: #ff991f;
+}
+
+#refresh-storage-info-button {
+    background-color: #0052cc;
+    color: #ffffff;
+}
+
+#refresh-storage-info-button:hover {
+    background-color: #0747a6;
+}
+
+/* Cleanup Settings */
+.cleanup-setting {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cleanup-setting label {
+    font-weight: 500;
+    color: #172b4d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cleanup-setting input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.cleanup-setting input[type="number"] {
+    max-width: 100px;
+}
+
+#save-cleanup-settings-button {
+    background-color: #36b37e;
+    color: #ffffff;
+    margin-top: 10px;
+}
+
+#save-cleanup-settings-button:hover {
+    background-color: #00875a;
+}
+
+/* Storage status indicators */
+.storage-status-warning {
+    background-color: #fffae6;
+    border: 1px solid #ffab00;
+    color: #974f00;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.storage-status-critical {
+    background-color: #ffebe6;
+    border: 1px solid #de350b;
+    color: #bf2600;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.storage-status-healthy {
+    background-color: #e3fcef;
+    border: 1px solid #36b37e;
+    color: #006644;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: 500;
+}

@@ -11,6 +11,30 @@
         <div class="header">
             <h1>Bitbucket PR Helper</h1>
             <p class="subtitle">Generate AI-powered PR descriptions</p>
+            <button id="options-btn" class="options-button" title="Open Settings">Options</button>
+        </div>
+
+        <div class="settings-selectors-container">
+            <div class="popup-input-group">
+                <label for="popup-template-select">Template:</label>
+                <select id="popup-template-select" name="popup-template-select">
+                    <option value="">-- Loading Templates --</option>
+                </select>
+            </div>
+
+            <div class="popup-input-group">
+                <label for="popup-llm-provider-select">LLM Provider:</label>
+                <select id="popup-llm-provider-select" name="popup-llm-provider-select">
+                    <option value="">-- Loading Providers --</option>
+                </select>
+            </div>
+
+            <div class="popup-input-group">
+                <label for="popup-llm-model-select">Model:</label>
+                <select id="popup-llm-model-select" name="popup-llm-model-select">
+                    <option value="">-- Select Provider First --</option>
+                </select>
+            </div>
         </div>
         
         <div class="form-section">

@@ -1,5 +1,12 @@
 // Popup script for Bitbucket PR Helper extension
-// Phase 1 MVP implementation
+
+import {
+    Template,
+    UserLLMConfig,
+    LLMProvider as LLMProviderDef,
+    ModelDetail
+} from '../common/storage_schema';
+import { getFromStorage, updateTemplateUsageStats } from '../common/storage_utils';
 
 interface BitbucketPRInfo {
   workspace: string;
@@ -10,8 +17,15 @@ interface BitbucketPRInfo {
 
 interface GenerateRequest {
   action: 'generate';
-  url: string;
+  prUrl: string;
   token: string;
+  templateContent: string;
+  llmConfig: {
+    providerId: string;
+    modelId: string;
+    apiKey: string | null;
+    customEndpoint: string | null;
+  };
 }
 
 interface GenerateResponse {
@@ -29,11 +43,21 @@ class PopupController {
   private fillButton!: HTMLButtonElement;
   private loadingSpinner!: HTMLElement;
   private buttonText!: HTMLElement;
+  private optionsButton!: HTMLButtonElement;
+
+  private templateSelect!: HTMLSelectElement;
+  private availableTemplates: Template[] = [];
+
+  private llmProviderSelect!: HTMLSelectElement;
+  private llmModelSelect!: HTMLSelectElement;
+  private availableLLMProviders: LLMProviderDef[] = [];
+  private currentUserLLMConfig: UserLLMConfig | null = null;
 
   constructor() {
     this.initializeElements();
     this.setupEventListeners();
     this.initializeState();
+    this.setupStorageListeners(); // Added
   }
 
   private initializeElements(): void {
@@ -46,316 +70,310 @@ class PopupController {
     this.fillButton = document.getElementById('fill-btn') as HTMLButtonElement;
     this.loadingSpinner = document.querySelector('.loading-spinner') as HTMLElement;
     this.buttonText = document.querySelector('.btn-text') as HTMLElement;
+    this.optionsButton = document.getElementById('options-btn') as HTMLButtonElement;
+    this.templateSelect = document.getElementById('popup-template-select') as HTMLSelectElement;
+    this.llmProviderSelect = document.getElementById('popup-llm-provider-select') as HTMLSelectElement;
+    this.llmModelSelect = document.getElementById('popup-llm-model-select') as HTMLSelectElement;
 
-    // Verify all required elements are present
-    if (!this.tokenInput || !this.generateButton || !this.resultTextarea || !this.statusMessage) {
+    if (!this.tokenInput || !this.generateButton || !this.resultTextarea ||
+        !this.statusMessage || !this.optionsButton || !this.templateSelect ||
+        !this.llmProviderSelect || !this.llmModelSelect) {
       console.error('Required DOM elements not found');
-      this.showError('Interface initialization failed. Please refresh the popup.');
-      return;
+      this.showError('Interface initialization failed.');
     }
   }
 
   private setupEventListeners(): void {
-    // Token input validation
-    this.tokenInput.addEventListener('input', () => {
-      this.validateTokenInput();
-    });
-
-    this.tokenInput.addEventListener('paste', () => {
-      // Validate after paste event completes
-      setTimeout(() => this.validateTokenInput(), 0);
-    });
-
-    // Generate button click handler
-    this.generateButton.addEventListener('click', () => {
-      this.handleGenerateClick();
-    });
-
-    // Action buttons
-    if (this.copyButton) {
-      this.copyButton.addEventListener('click', () => {
-        this.copyToClipboard();
-      });
-    }
-
-    if (this.fillButton) {
-      this.fillButton.addEventListener('click', () => {
-        this.fillIntoPage();
-      });
-    }
-
-    // Enter key support for token input
+    this.tokenInput.addEventListener('input', () => this.validateTokenInput());
+    this.tokenInput.addEventListener('paste', () => setTimeout(() => this.validateTokenInput(), 0));
+    this.generateButton.addEventListener('click', () => this.handleGenerateClick());
+    if (this.copyButton) this.copyButton.addEventListener('click', () => this.copyToClipboard());
+    if (this.fillButton) this.fillButton.addEventListener('click', () => this.fillIntoPage());
     this.tokenInput.addEventListener('keypress', e => {
-      if (e.key === 'Enter' && !this.generateButton.disabled) {
-        this.handleGenerateClick();
-      }
+      if (e.key === 'Enter' && !this.generateButton.disabled) this.handleGenerateClick();
     });
+    if (this.optionsButton) { // @ts-ignore
+      this.optionsButton.addEventListener('click', () => { if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage(); else window.open(chrome.runtime.getURL('options/options.html')); });
+    }
+    if (this.llmProviderSelect) {
+        this.llmProviderSelect.addEventListener('change', () => {
+            if(this.currentUserLLMConfig) {
+                this.currentUserLLMConfig.providerId = this.llmProviderSelect.value || null;
+                this.currentUserLLMConfig.selectedModelId = null;
+            } else {
+                this.currentUserLLMConfig = { providerId: this.llmProviderSelect.value || null, apiKey: null, selectedModelId: null, customEndpoint: null };
+            }
+            this.renderLLMModelSelection();
+            this.validateTokenInput();
+        });
+    }
+    if (this.llmModelSelect) {
+        this.llmModelSelect.addEventListener('change', () => {
+             if(this.currentUserLLMConfig) {
+                this.currentUserLLMConfig.selectedModelId = this.llmModelSelect.value || null;
+             }
+             this.validateTokenInput();
+        });
+    }
+     if (this.templateSelect) {
+        this.templateSelect.addEventListener('change', () => this.validateTokenInput());
+    }
   }
 
   private initializeState(): void {
-    // Check current page on popup open
     this.checkCurrentPage();
-
-    // Initialize UI state
     this.validateTokenInput();
     this.hideActionButtons();
     this.clearStatus();
+    this.loadAndRenderTemplates();
+    this.loadAndRenderLLMConfig();
+  }
+
+  private setupStorageListeners(): void {
+    // @ts-ignore
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== 'sync') {
+            return;
+        }
+        console.log("Popup: Storage changed in 'sync' area:", changes);
+
+        if (changes.userLLMConfig) {
+            console.log("Popup: UserLLMConfig changed. Reloading LLM config for popup.");
+            this.loadAndRenderLLMConfig().catch(err => console.error("Popup: Error reloading LLM config on change:", err));
+        }
+        if (changes.templates) {
+            console.log("Popup: Templates changed. Reloading templates for popup.");
+            this.loadAndRenderTemplates().catch(err => console.error("Popup: Error reloading templates on change:", err));
+        }
+    });
+  }
+
+  private initializeLLMProviderData(): void {
+    this.availableLLMProviders = [
+        { id: 'openai', name: 'OpenAI', models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresApiKey: true, requiresCustomEndpoint: false },
+        { id: 'anthropic', name: 'Anthropic (Claude)', models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresApiKey: true, requiresCustomEndpoint: false },
+        { id: 'ollama', name: 'Ollama (Local)', models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'} ], requiresApiKey: false, requiresCustomEndpoint: true }
+    ];
+  }
+
+  private async loadAndRenderLLMConfig(): Promise<void> {
+    if (!this.llmProviderSelect || !this.llmModelSelect) return;
+    this.initializeLLMProviderData();
+
+    this.llmProviderSelect.disabled = true; this.llmModelSelect.disabled = true;
+    this.llmProviderSelect.innerHTML = '<option value="">-- Loading --</option>';
+    this.llmModelSelect.innerHTML = '<option value="">-- Wait --</option>';
+
+    try {
+        this.currentUserLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null });
+
+        this.llmProviderSelect.innerHTML = '<option value="">-- Select Provider --</option>';
+        this.availableLLMProviders.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id; option.textContent = p.name;
+            this.llmProviderSelect.appendChild(option);
+        });
+
+        if (this.currentUserLLMConfig && this.currentUserLLMConfig.providerId) {
+            this.llmProviderSelect.value = this.currentUserLLMConfig.providerId;
+        }
+        this.llmProviderSelect.disabled = false;
+        this.renderLLMModelSelection();
+    } catch (error) {
+        this.llmProviderSelect.innerHTML = '<option value="">-- Error --</option>';
+        this.llmModelSelect.innerHTML = '<option value="">-- Error --</option>';
+        this.showError("Failed to load LLM config.");
+    }
+  }
+
+  private renderLLMModelSelection(): void {
+    if (!this.llmModelSelect || !this.llmProviderSelect) return;
+    const selectedProviderId = this.llmProviderSelect.value;
+    const provider = this.availableLLMProviders.find(p => p.id === selectedProviderId);
+
+    this.llmModelSelect.innerHTML = ''; this.llmModelSelect.disabled = true;
+
+    if (provider && provider.models && provider.models.length > 0) {
+        const defaultOpt = document.createElement('option'); defaultOpt.value = ""; defaultOpt.textContent = "-- Select Model --";
+        this.llmModelSelect.appendChild(defaultOpt);
+        provider.models.forEach(model => { const o=document.createElement('option');o.value=model.id;o.textContent=model.name;this.llmModelSelect.appendChild(o);});
+        if (this.currentUserLLMConfig && this.currentUserLLMConfig.providerId === selectedProviderId && this.currentUserLLMConfig.selectedModelId) {
+            if(provider.models.some(m => m.id === this.currentUserLLMConfig!.selectedModelId)) this.llmModelSelect.value = this.currentUserLLMConfig.selectedModelId;
+        }
+        this.llmModelSelect.disabled = false;
+    } else {
+        const o=document.createElement('option');o.value='';o.textContent=selectedProviderId ? '-- No Models --':'-- Select Provider --';this.llmModelSelect.appendChild(o);
+    }
+  }
+
+  private async loadAndRenderTemplates(): Promise<void> {
+    if (!this.templateSelect) return;
+    this.templateSelect.disabled = true;
+    this.templateSelect.innerHTML = '<option value="">-- Loading Templates --</option>';
+    try {
+        this.availableTemplates = await getFromStorage('templates', []);
+        this.templateSelect.innerHTML = '';
+        if (this.availableTemplates.length === 0) { const o=document.createElement('option');o.value='';o.textContent='-- No Templates Configured --';this.templateSelect.appendChild(o);this.templateSelect.disabled=true; }
+        else { const dO=document.createElement('option');dO.value='';dO.textContent='-- Select a Template --';this.templateSelect.appendChild(dO);
+            this.availableTemplates.forEach(t => {const o=document.createElement('option');o.value=t.id;o.textContent=t.name;this.templateSelect.appendChild(o);});
+            this.templateSelect.disabled = false;
+        }
+    } catch (error) {
+        this.templateSelect.innerHTML = '<option value="">-- Error Loading --</option>';
+        this.templateSelect.disabled = true; this.showError("Failed to load templates.");
+    }
   }
 
   private async checkCurrentPage(): Promise<void> {
-    try {
+    try { // @ts-ignore
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
-
-      if (!currentTab || !currentTab.url) {
-        this.showError('Unable to access current page. Please refresh and try again.');
-        return;
-      }
-
+      if (!currentTab || !currentTab.url) { this.showError('Cannot access current page.'); return; }
       const prInfo = this.extractPRInfoFromUrl(currentTab.url);
-      if (!prInfo) {
-        this.showError('Please navigate to a Bitbucket Pull Request page first.');
-        this.generateButton.disabled = true;
-        return;
-      }
-
-      this.showInfo(`Detected PR: ${prInfo.workspace}/${prInfo.repo}#${prInfo.prId}`);
-    } catch (error) {
-      console.error('Error checking current page:', error);
-      this.showError(
-        'Unable to access current page. Please ensure you have the required permissions.',
-      );
-    }
+      if (!prInfo) { this.showError('Not a Bitbucket PR page.'); this.generateButton.disabled = true; return; }
+      this.showInfo(`PR: ${prInfo.workspace}/${prInfo.repo}#${prInfo.prId}`);
+    } catch (error) { this.showError('Error checking page.'); }
   }
 
   private extractPRInfoFromUrl(url: string): BitbucketPRInfo | null {
-    // Bitbucket PR URL pattern: https://bitbucket.org/workspace/repo/pull-requests/123
     const prUrlPattern = /^https:\/\/bitbucket\.org\/([^\/]+)\/([^\/]+)\/pull-requests\/(\d+)/;
     const match = url.match(prUrlPattern);
-
-    if (!match) {
-      return null;
-    }
-
-    return {
-      workspace: match[1]!,
-      repo: match[2]!,
-      prId: match[3]!,
-      fullUrl: url,
-    };
+    if (!match) return null;
+    return { workspace: match[1]!, repo: match[2]!, prId: match[3]!, fullUrl: url };
   }
 
   private validateTokenInput(): void {
     const tokenValue = this.tokenInput.value.trim();
     const isValid = this.isValidToken(tokenValue);
+    const templateSelected = !!this.templateSelect.value;
+    const providerSelected = !!this.llmProviderSelect.value;
+    const modelSelected = !!this.llmModelSelect.value;
 
-    // Enable/disable generate button based on token validity
-    this.generateButton.disabled = !isValid;
+    this.generateButton.disabled = !isValid || !templateSelected || !providerSelected || !modelSelected;
 
-    // Update input styling based on validity
     if (tokenValue.length > 0) {
-      if (isValid) {
-        this.tokenInput.classList.remove('invalid');
-        this.clearStatus();
-      } else {
-        this.tokenInput.classList.add('invalid');
-        this.showError('Please enter a valid Bitbucket OAuth token');
+      this.tokenInput.classList.toggle('invalid', !isValid);
+      if (!isValid && this.statusMessage.textContent === '') { // Only show token error if no other error is shown
+        this.showError('Invalid Bitbucket OAuth token format.');
+      } else if (isValid && this.statusMessage.className.includes('error')) { // Clear if valid and error was shown
+         // this.clearStatus(); // This might clear other important messages, be cautious
       }
     } else {
       this.tokenInput.classList.remove('invalid');
-      this.clearStatus();
     }
   }
 
   private isValidToken(token: string): boolean {
-    // Basic token validation
-    // Bitbucket OAuth tokens are typically 40+ characters alphanumeric
-    if (!token || token.length < 20) {
-      return false;
-    }
-
-    // Check for common token patterns
-    const tokenPattern = /^[a-zA-Z0-9_-]+$/;
-    return tokenPattern.test(token);
+    if (!token || token.length < 20) return false;
+    return /^[a-zA-Z0-9_-]+$/.test(token);
   }
 
   private async handleGenerateClick(): Promise<void> {
     try {
       const tokenValue = this.tokenInput.value.trim();
-      if (!tokenValue || !this.isValidToken(tokenValue)) {
-        this.showError('Please enter a valid Bitbucket OAuth token');
-        return;
+      // ValidateTokenInput should have already handled generateButton.disabled state
+      if (this.generateButton.disabled) {
+          if (!tokenValue || !this.isValidToken(tokenValue)) this.showError('Invalid OAuth token.');
+          else if (!this.templateSelect.value) this.showError('Please select a template.');
+          else if (!this.llmProviderSelect.value) this.showError('Please select an LLM Provider.');
+          else if (!this.llmModelSelect.value) this.showError('Please select an LLM Model.');
+          else this.showError('Please ensure all fields and selections are valid.');
+          return;
       }
-
-      // Get current tab URL
+      // @ts-ignore
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
+      if (!currentTab || !currentTab.url) { this.showError('Cannot access current page.'); return; }
+      const prInfo = this.extractPRInfoFromUrl(currentTab.url); // Already checked by checkCurrentPage for button state too
+      if (!prInfo) { this.showError('Not a Bitbucket PR page.'); return; }
 
-      if (!currentTab || !currentTab.url) {
-        this.showError('Unable to access current page');
-        return;
+      const selectedTemplate = this.availableTemplates.find(t => t.id === this.templateSelect.value);
+      if (!selectedTemplate) { this.showError("Selected template not found."); return; } // Should be caught by button state
+
+      const selectedProviderId = this.llmProviderSelect.value;
+      const selectedModelId = this.llmModelSelect.value;
+
+      if (!this.currentUserLLMConfig || this.currentUserLLMConfig.providerId !== selectedProviderId) {
+          this.showError('LLM configuration error. Please save settings in Options page.'); return;
       }
 
-      // Validate current page is a Bitbucket PR page
-      const prInfo = this.extractPRInfoFromUrl(currentTab.url);
-      if (!prInfo) {
-        this.showError('Please navigate to a Bitbucket Pull Request page');
-        return;
-      }
+      this.setLoadingState(true); this.showInfo('Generating PR description...');
 
-      // Show loading state
-      this.setLoadingState(true);
-      this.showInfo('Generating PR description...');
-
-      // Send message to background script
       const request: GenerateRequest = {
-        action: 'generate',
-        url: currentTab.url,
-        token: tokenValue,
+          action: 'generate',
+          prUrl: currentTab.url,
+          token: tokenValue,
+          templateContent: selectedTemplate.content,
+          llmConfig: {
+            providerId: selectedProviderId,
+            modelId: selectedModelId,
+            apiKey: this.currentUserLLMConfig.apiKey || null,
+            customEndpoint: this.currentUserLLMConfig.customEndpoint || null
+        }
       };
 
+      // Track template usage (async, don't wait for it)
+      updateTemplateUsageStats(selectedTemplate.id).catch(error => 
+          console.warn('Failed to update template usage stats:', error)
+      );
+
+      console.log("Sending generation request to background:", request);
       const response = await this.sendMessageToBackground(request);
       this.handleGenerateResponse(response);
-    } catch (error) {
-      console.error('Error in generate click handler:', error);
-      this.showError('An unexpected error occurred. Please try again.');
-    } finally {
-      this.setLoadingState(false);
-    }
+    } catch (error) { this.showError('Unexpected error during generation.'); }
+    finally { this.setLoadingState(false); }
   }
 
   private sendMessageToBackground(request: GenerateRequest): Promise<GenerateResponse> {
-    return new Promise(resolve => {
-      chrome.runtime.sendMessage(request, (response: GenerateResponse) => {
-        // Handle potential errors in message passing
-        if (chrome.runtime.lastError) {
-          console.error('Runtime error:', chrome.runtime.lastError);
-          resolve({ error: 'Failed to communicate with extension background script' });
-        } else {
-          resolve(response || { error: 'No response received from background script' });
-        }
+    return new Promise(resolve => { // @ts-ignore
+      chrome.runtime.sendMessage(request, (response: GenerateResponse) => { // @ts-ignore
+        if (chrome.runtime.lastError) resolve({ error: 'Background script error.' });
+        else resolve(response || { error: 'No response from background.' });
       });
     });
   }
-
   private handleGenerateResponse(response: GenerateResponse): void {
     if (response.error) {
-      // Ensure error is a string
-      let errorMessage = response.error;
-      if (typeof errorMessage !== 'string') {
-        console.error('Error is not a string:', errorMessage);
-        errorMessage = 'An unexpected error occurred';
-      }
-      this.showError(errorMessage);
-      this.resultTextarea.value = '';
-      this.hideActionButtons();
+      this.showError(typeof response.error === 'string' ? response.error : 'Unknown error.');
+      this.resultTextarea.value = ''; this.hideActionButtons();
     } else if (response.description) {
-      this.showSuccess('PR description generated successfully!');
-      this.resultTextarea.value = response.description;
-      this.showActionButtons();
+      this.showSuccess('PR description generated!');
+      this.resultTextarea.value = response.description; this.showActionButtons();
     } else {
-      this.showError('Received invalid response from server');
-      this.resultTextarea.value = '';
-      this.hideActionButtons();
+      this.showError('Invalid response.'); this.resultTextarea.value = ''; this.hideActionButtons();
     }
   }
-
   private async copyToClipboard(): Promise<void> {
-    try {
-      const text = this.resultTextarea.value;
-      if (!text) {
-        this.showError('No content to copy');
-        return;
-      }
-
-      await navigator.clipboard.writeText(text);
-      this.showSuccess('Description copied to clipboard!');
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
-      // Fallback for older browsers
-      this.resultTextarea.select();
-      document.execCommand('copy');
-      this.showSuccess('Description copied to clipboard!');
-    }
+    const text = this.resultTextarea.value;
+    if (!text) { this.showError('No content to copy.'); return; }
+    try { await navigator.clipboard.writeText(text); this.showSuccess('Copied!'); }
+    catch (error) { this.resultTextarea.select(); document.execCommand('copy'); this.showSuccess('Copied (fallback)!'); }
   }
-
   private async fillIntoPage(): Promise<void> {
-    try {
-      const text = this.resultTextarea.value;
-      if (!text) {
-        this.showError('No content to fill');
-        return;
-      }
-
-      // This would be implemented in future phases with content script integration
-      // For now, just show a message
-      this.showInfo('Fill into page functionality will be implemented in Phase 2');
-
-      // Also copy to clipboard as a fallback
-      await this.copyToClipboard();
-    } catch (error) {
-      console.error('Failed to fill into page:', error);
-      this.showError('Failed to fill content into page');
-    }
+    const text = this.resultTextarea.value;
+    if (!text) { this.showError('No content to fill.'); return; }
+    this.showInfo('Fill into page: See Phase 2 plan.');
+    await this.copyToClipboard();
   }
-
   private setLoadingState(loading: boolean): void {
-    if (loading) {
-      this.generateButton.disabled = true;
-      this.loadingSpinner.style.display = 'block';
-      this.buttonText.textContent = 'Generating...';
-    } else {
-      this.generateButton.disabled = !this.isValidToken(this.tokenInput.value.trim());
-      this.loadingSpinner.style.display = 'none';
-      this.buttonText.textContent = 'Generate Description';
-    }
+    const commonDisableCondition = !this.isValidToken(this.tokenInput.value.trim()) ||
+                                  !this.templateSelect.value ||
+                                  !this.llmProviderSelect.value ||
+                                  !this.llmModelSelect.value;
+    if(this.generateButton) this.generateButton.disabled = loading || commonDisableCondition;
+    if(this.loadingSpinner) this.loadingSpinner.style.display = loading ? 'block' : 'none';
+    if(this.buttonText) this.buttonText.textContent = loading ? 'Generating...' : 'Generate Description';
   }
-
-  private showActionButtons(): void {
-    if (this.actionButtons) {
-      this.actionButtons.style.display = 'flex';
-    }
-  }
-
-  private hideActionButtons(): void {
-    if (this.actionButtons) {
-      this.actionButtons.style.display = 'none';
-    }
-  }
-
-  private showSuccess(message: string): void {
-    this.statusMessage.textContent = message;
-    this.statusMessage.className = 'status-message success';
-  }
-
-  private showError(message: string): void {
-    // Ensure message is a string
-    let errorMessage = message;
-    if (typeof message !== 'string') {
-      console.error('showError received non-string message:', message);
-      errorMessage = String(message) || 'An unexpected error occurred';
-    }
-    
-    this.statusMessage.textContent = errorMessage;
-    this.statusMessage.className = 'status-message error';
-  }
-
-  private showInfo(message: string): void {
-    this.statusMessage.textContent = message;
-    this.statusMessage.className = 'status-message info';
-  }
-
-  private clearStatus(): void {
-    this.statusMessage.textContent = '';
-    this.statusMessage.className = 'status-message';
-  }
+  private showActionButtons(): void { if (this.actionButtons) this.actionButtons.style.display = 'flex'; }
+  private hideActionButtons(): void { if (this.actionButtons) this.actionButtons.style.display = 'none'; }
+  private showSuccess(message: string): void { if(this.statusMessage) {this.statusMessage.textContent = message; this.statusMessage.className = 'status-message success';} }
+  private showError(message: string): void { if(this.statusMessage) {this.statusMessage.textContent = String(message || 'An error occurred'); this.statusMessage.className = 'status-message error';} }
+  private showInfo(message: string): void { if(this.statusMessage) {this.statusMessage.textContent = message; this.statusMessage.className = 'status-message info';} }
+  private clearStatus(): void { if(this.statusMessage){this.statusMessage.textContent = ''; this.statusMessage.className = 'status-message';} }
 }
 
-// Initialize popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Popup script loaded');
   new PopupController();
 });
 
-// Export for testing purposes
 export { PopupController };
