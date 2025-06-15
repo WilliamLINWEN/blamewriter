@@ -133,6 +133,7 @@ export async function isOAuthTokenValid(): Promise<boolean> {
 
 /**
  * Get valid access token, refreshing if necessary
+ * Note: Refresh logic is handled by the background script
  * @returns Promise resolving to access token or null if unavailable
  */
 export async function getValidAccessToken(): Promise<string | null> {
@@ -148,14 +149,8 @@ export async function getValidAccessToken(): Promise<string | null> {
       return tokens.access_token || null;
     }
 
-    // If we have a refresh token, try to refresh
-    if (tokens.refresh_token) {
-      console.log('Access token expired, attempting refresh...');
-      // TODO: Implement token refresh logic in next task
-      // For now, return null to trigger re-authentication
-      return null;
-    }
-
+    // Token is expired or invalid - background script should handle refresh
+    console.log('Access token expired or invalid - refresh needed');
     return null;
   } catch (error) {
     console.error('Error getting valid access token:', error);
