@@ -25,6 +25,16 @@ export interface LLMProviderConfig {
 }
 
 /**
+ * Standard template placeholders:
+ * - `{BRANCH_NAME}`: The name of the branch for the pull request.
+ * - `{COMMIT_MESSAGES}`: A summary of commit messages in the pull request.
+ * - `{DIFF_SUMMARY}`: A summary of the changes in the diff.
+ * - `{PULL_REQUEST_TITLE}`: The title of the pull request.
+ * - `{PULL_REQUEST_BODY}`: The body/description of the pull request.
+ * - `{DIFF_CONTENT}`: The full diff content.
+ */
+
+/**
  * Options for generating PR descriptions
  */
 export interface GenerateDescriptionOptions {
@@ -33,6 +43,7 @@ export interface GenerateDescriptionOptions {
   temperature?: number;
   diffSizeLimit?: number;
   template?: string;
+  templateData?: Record<string, string>; // For PR-specific data like branch name, commit messages, etc.
 }
 
 /**
@@ -112,12 +123,63 @@ export abstract class BaseLLMProvider {
   }
 
   /**
-   * Generate a PR description based on diff content
+   * Generate a PR description using a template and provided data.
+   * This method orchestrates template selection, validation, processing, and then calls a specific LLM provider.
    */
-  abstract generatePRDescription(
-    diffContent: string,
+  public async generatePRDescription(options?: GenerateDescriptionOptions): Promise<GeneratedDescription> {
+    const templateData = options?.templateData || {};
+    let diffContent = templateData.DIFF_CONTENT || ''; // Get diff content from templateData
+
+    // Truncate diff content if necessary
+    let diffSizeTruncated = false;
+    const originalDiffSize = diffContent.length;
+    let truncatedDiffSize = originalDiffSize;
+
+    if (options?.diffSizeLimit && diffContent.length > options.diffSizeLimit) {
+      const truncatedResult = this.truncateDiff(diffContent, options.diffSizeLimit);
+      diffContent = truncatedResult.truncated;
+      diffSizeTruncated = truncatedResult.wasTruncated;
+      truncatedDiffSize = diffContent.length;
+    }
+
+    // Update DIFF_CONTENT in templateData after potential truncation
+    const finalTemplateData = { ...templateData, DIFF_CONTENT: diffContent };
+
+    const template = options?.template || this.getDefaultPromptTemplate();
+
+    const validationResult = this.validateTemplate(template);
+    if (!validationResult.isValid) {
+      throw new LLMProviderError(
+        this.providerType,
+        LLMProviderErrorCode.INVALID_REQUEST,
+        `Invalid template: ${validationResult.errors.join(', ')}`,
+      );
+    }
+
+    const processedPrompt = this.processTemplate(template, finalTemplateData);
+
+    // Call the abstract method to be implemented by concrete providers
+    const llmResponse = await this.executeLLMGeneration(processedPrompt, options);
+
+    // Enrich the response with additional information
+    return {
+      ...llmResponse,
+      diffSizeTruncated,
+      originalDiffSize,
+      truncatedDiffSize,
+    };
+  }
+
+  /**
+   * Abstract method for concrete LLM providers to implement the actual generation logic.
+   * @param prompt The fully processed prompt string.
+   * @param options Original options, which might contain model, maxTokens, etc.
+   * @returns A partial GeneratedDescription, usually { description, model, provider, tokensUsed, metadata }
+   */
+  protected abstract executeLLMGeneration(
+    prompt: string,
     options?: GenerateDescriptionOptions,
-  ): Promise<GeneratedDescription>;
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>>;
 
   /**
    * Test the connection to the LLM provider
@@ -163,30 +225,25 @@ export abstract class BaseLLMProvider {
   /**
    * Truncate diff content to prevent token limit issues
    */
-  protected truncateDiff(diff: string, limit: number): { truncated: string; wasTruncated: boolean } {
-    if (diff.length <= limit) {
-      return { truncated: diff, wasTruncated: false };
+  // This method will likely be refactored or used differently now that diffContent comes from templateData
+  // For now, let's assume the raw diffContent is available in options.templateData.DIFF_CONTENT if needed for truncation.
+  protected truncateDiff(diffContent: string, limit: number): { truncated: string; wasTruncated: boolean } {
+    if (diffContent.length <= limit) {
+      return { truncated: diffContent, wasTruncated: false };
     }
 
-    // Truncate at the limit but try to end at a line break for better readability
-    let truncated = diff.substring(0, limit);
+    let truncated = diffContent.substring(0, limit);
     const lastNewlineIndex = truncated.lastIndexOf('\n');
 
     if (lastNewlineIndex > limit * 0.8) {
-      // Only use newline if it's not too far back
       truncated = truncated.substring(0, lastNewlineIndex);
     }
-
-    // Add truncation indicator
     truncated += '\n\n[... diff truncated due to size limit ...]';
-
     return { truncated, wasTruncated: true };
   }
 
-  /**
-   * Get default prompt template for PR description generation
-   */
   protected getDefaultPromptTemplate(): string {
+    // Default template expects DIFF_CONTENT to be present in templateData
     return `Please generate a PR description based on the following diff. Please respond in Traditional Chinese and include the following sections:
 
 1. **摘要**：簡述這個 PR 的主要目的和變更
@@ -203,11 +260,81 @@ Here is the diff content:
 \`\`\``;
   }
 
+  protected processTemplate(template: string, templateVars?: Record<string, string>): string {
+    let processedTemplate = template;
+    if (templateVars) {
+      for (const key in templateVars) {
+        // Ensure the key exists in templateVars to avoid replacing with "undefined"
+        if (Object.prototype.hasOwnProperty.call(templateVars, key) && templateVars[key] !== undefined) {
+          processedTemplate = processedTemplate.replace(new RegExp(`{${key}}`, 'g'), templateVars[key]);
+        }
+      }
+    }
+    return processedTemplate;
+  }
+
   /**
-   * Replace placeholders in template with actual values
+   * Validates and sanitizes a template string.
    */
-  protected processTemplate(template: string, diffContent: string): string {
-    return template.replace('{DIFF_CONTENT}', diffContent);
+  public validateTemplate(template: string): { isValid: boolean; errors: string[] } {
+    const knownPlaceholders = [
+      'BRANCH_NAME',
+      'COMMIT_MESSAGES',
+      'DIFF_SUMMARY',
+      'PULL_REQUEST_TITLE',
+      'PULL_REQUEST_BODY',
+      'DIFF_CONTENT',
+    ];
+    const errors: string[] = [];
+    let isValid = true;
+
+    // Basic sanitization: check for script tags
+    if (/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi.test(template)) {
+      errors.push('Template contains script tags, which are not allowed.');
+      isValid = false;
+    }
+
+    // Placeholder syntax and known placeholder validation
+    const placeholderRegex = /{(\w+)}/g; // Matches valid placeholders like {WORD}
+    const allContentBetweenBracesRegex = /{([^{}]+)}/g; // Finds all content between {}
+    let match;
+
+    const openBracesCount = (template.match(/{/g) || []).length;
+    const closeBracesCount = (template.match(/}/g) || []).length;
+
+    if (openBracesCount !== closeBracesCount) {
+      errors.push('Mismatched curly braces in template.');
+      isValid = false;
+      // No point in further placeholder validation if braces are mismatched
+      return { isValid, errors };
+    }
+
+    // Check for improperly formatted placeholders (e.g. {WORD TOKEN} or {{NESTED}})
+    // and if all correctly formatted placeholders are known.
+    // We iterate through all content found between braces first.
+    const foundPlaceholders = new Set<string>();
+    while ((match = allContentBetweenBracesRegex.exec(template)) !== null) {
+      const contentBetweenBraces = match[1]; // e.g., "WORD", "WORD TOKEN", "NESTED" from {{NESTED}}
+
+      // Check if the content is a single valid word (as per our placeholder definition)
+      if (/^\w+$/.test(contentBetweenBraces)) {
+        foundPlaceholders.add(contentBetweenBraces); // Store it for the "known placeholders" check
+      } else {
+        // If it's not a single word, it's an invalid format.
+        errors.push(`Invalid placeholder format: ${match[0]}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).`);
+        isValid = false;
+      }
+    }
+
+    // Now check if all syntactically valid placeholders are known
+    for (const placeholderName of foundPlaceholders) {
+      if (!knownPlaceholders.includes(placeholderName)) {
+        errors.push(`Unknown placeholder: {${placeholderName}}.`);
+        isValid = false;
+      }
+    }
+
+    return { isValid, errors };
   }
 }
 
