@@ -141,6 +141,7 @@ class OptionsController implements IOptionsController {
         this.llmProviders = [
             { id: 'openai', name: 'OpenAI', apiKeyLabel: 'OpenAI API Key', requiresApiKey: true, models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresCustomEndpoint: false, helpText: 'Get API key from platform.openai.com.' },
             { id: 'anthropic', name: 'Anthropic (Claude)', apiKeyLabel: 'Anthropic API Key', requiresApiKey: true, models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresCustomEndpoint: false, helpText: 'Get API key from console.anthropic.com.' },
+            { id: 'xai', name: 'xAI (Grok)', apiKeyLabel: 'xAI API Key', requiresApiKey: true, models: [ {id: 'grok-beta', name: 'Grok Beta'}, {id: 'grok-vision-beta', name: 'Grok Vision Beta'} ], requiresCustomEndpoint: false, helpText: 'Get API key from x.ai console.' },
             { id: 'ollama', name: 'Ollama (Local)', requiresApiKey: false, models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'}, {id: 'phi3', name: 'Phi-3'} ], requiresCustomEndpoint: true, customEndpointLabel: 'Ollama Server URL', helpText: 'Ensure Ollama server is running.' },
         ];
     }
@@ -234,7 +235,20 @@ class OptionsController implements IOptionsController {
         } catch (e) { this.handleError(e, "Failed to load templates."); }
     }
     private async createAndLoadDefaultPresets(): Promise<void> {
-        const d:Template[]=[{id:this.generateId(),name:"Default Feature PR",content:"## Overview\n{pr_body}\n\n## Background\n{background}\n\n## Changes Made\n{changes}\n\n## Testing\n{tests}",metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}},{id:this.generateId(),name:"Simple Bugfix PR",content:"## Issue Fixed\n{pr_title}\n\n## Description of Fix\n{changes}",metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}];
+        const d:Template[]=[
+            {
+                id:this.generateId(),
+                name:"Default Feature PR",  
+                content:"## 🎯 Overview\nPlease analyze the following code changes and provide a comprehensive PR description.\n\n## 📝 Code Changes\n{DIFF_CONTENT}\n\n## 📋 Pull Request Details\n- **Title**: {PULL_REQUEST_TITLE}\n- **Author**: {AUTHOR}\n- **Branch**: {BRANCH_NAME}\n- **Repository**: {REPO_NAME}\n\n## 🧪 Testing Suggestions\nPlease suggest appropriate testing based on the changes above.\n\n## 📦 Deployment Notes\nPlease identify any deployment considerations.",
+                metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+            },
+            {
+                id:this.generateId(),
+                name:"Simple Bugfix PR",
+                content:"## 🐛 Bug Fix Summary\nPlease describe what bug was fixed based on the code changes.\n\n## 🔍 Changes Made\n{DIFF_CONTENT}\n\n## 📋 PR Information\n- **Author**: {AUTHOR}\n- **Files Changed**: {FILES_CHANGED}\n- **Commit Messages**: {COMMIT_MESSAGES}\n\n## ✅ Verification\nPlease suggest how to verify this fix works correctly.",
+                metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+            }
+        ];
         try { await saveToStorage({templates:d}); this.templates=d; this.renderTemplateList(); this.showFeedback("Loaded default templates.","info");
         } catch (e) { this.handleError(e, "Failed to save default templates."); }
     }
@@ -265,8 +279,42 @@ class OptionsController implements IOptionsController {
     }
     public previewTemplate():void{
         const ci=document.getElementById('template-content')as HTMLTextAreaElement,pa=document.getElementById('template-preview-area'); if(!ci||!pa){this.showFeedback("Preview elements missing.","error");return;} let c=ci.value;
-        const p={'{branch_name}':'dev/branch','{pr_title}':'Title','{pr_body}':'Body','{diff_summary}':'Diff','{commit_messages}':'Commits','{file_changes}':'Files','{background}':'BG','{changes}':'Changes','{tests}':'Tests'};
-        for(const[k,v]of Object.entries(p))c=c.split(k).join(v); pa.textContent=c;this.showFeedback("Preview updated.","info");
+        const sampleDiff = `diff --git a/src/auth/middleware.ts b/src/auth/middleware.ts
+new file mode 100644
+index 0000000..abcd123
+--- /dev/null
++++ b/src/auth/middleware.ts
+@@ -0,0 +1,25 @@
++import jwt from 'jsonwebtoken';
++import { Request, Response, NextFunction } from 'express';
++
++export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
++  const authHeader = req.headers['authorization'];
++  const token = authHeader && authHeader.split(' ')[1];
++
++  if (!token) {
++    return res.status(401).json({ error: 'Access token required' });
++  }
++
++  jwt.verify(token, process.env.JWT_SECRET!, (err, user) => {
++    if (err) return res.status(403).json({ error: 'Invalid token' });
++    req.user = user;
++    next();
++  });
++};`;
+        
+        const p={
+            '{DIFF_CONTENT}': sampleDiff,
+            '{PULL_REQUEST_TITLE}': 'Add JWT authentication middleware',
+            '{PULL_REQUEST_BODY}': 'Implements secure JWT token validation for API endpoints',
+            '{AUTHOR}': 'John Smith',
+            '{BRANCH_NAME}': 'feature/auth-middleware',
+            '{REPO_NAME}': 'my-project',
+            '{COMMIT_MESSAGES}': 'feat: add JWT middleware\nfeat: implement token validation',
+            '{DIFF_SUMMARY}': 'Added JWT authentication middleware with token validation',
+            '{FILES_CHANGED}': 'src/auth/middleware.ts'
+        };
+        for(const[k,v]of Object.entries(p))c=c.split(k).join(v); pa.textContent=c;this.showFeedback("Preview updated with sample PR data.","info");
     }
 
     public async exportAllSettings(): Promise<void> {

@@ -2,7 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { validateEnvironmentOrExit } from './utils/env-validation';
-import generateRouter from './routes/generate';
+import generateRouter from './routes/generate-v2';
+import multiLLMRouter from './routes/generate-v2-multi-llm';
+import { requestLoggingMiddleware, auditMiddleware } from './middleware/logging';
 
 // Load environment variables
 dotenv.config();
@@ -27,15 +29,9 @@ app.use(
 // JSON body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 
-// Request logging middleware for debugging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-  }
-  next();
-});
+// Enhanced request logging and audit middleware
+app.use(requestLoggingMiddleware());
+app.use(auditMiddleware());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -51,6 +47,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/v1', generateRouter);
+app.use('/api/v2', multiLLMRouter); // Enhanced multi-LLM provider route
 
 // Basic error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
