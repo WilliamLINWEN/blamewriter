@@ -9,7 +9,6 @@ interface GenerateRequest {
   llmConfig: {
     providerId: string;
     modelId: string;
-    apiKey: string | null;
     customEndpoint: string | null;
   };
 }
@@ -28,7 +27,6 @@ interface ApiRequestBody {
   llmConfig: {
     providerId: string;
     modelId: string;
-    apiKey: string | null;
     customEndpoint: string | null;
   };
 }
@@ -152,7 +150,6 @@ class BackgroundService {
     llmConfig: {
       providerId: string;
       modelId: string;
-      apiKey: string | null;
       customEndpoint: string | null;
     }
   ): Promise<Response> {

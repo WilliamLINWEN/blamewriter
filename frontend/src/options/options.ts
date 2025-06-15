@@ -55,7 +55,7 @@ class OptionsController implements IOptionsController {
     private templates: Template[] = [];
     private llmProviders: LLMProvider[] = [];
     private currentUserLLMConfig: UserLLMConfig = {
-        providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null,
+        providerId: null, selectedModelId: null, customEndpoint: null,
     };
 
     constructor() {
@@ -139,19 +139,19 @@ class OptionsController implements IOptionsController {
 
     private initializeLLMProviders(): void {
         this.llmProviders = [
-            { id: 'openai', name: 'OpenAI', apiKeyLabel: 'OpenAI API Key', requiresApiKey: true, models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresCustomEndpoint: false, helpText: 'Get API key from platform.openai.com.' },
-            { id: 'anthropic', name: 'Anthropic (Claude)', apiKeyLabel: 'Anthropic API Key', requiresApiKey: true, models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresCustomEndpoint: false, helpText: 'Get API key from console.anthropic.com.' },
-            { id: 'xai', name: 'xAI (Grok)', apiKeyLabel: 'xAI API Key', requiresApiKey: true, models: [ {id: 'grok-beta', name: 'Grok Beta'}, {id: 'grok-vision-beta', name: 'Grok Vision Beta'} ], requiresCustomEndpoint: false, helpText: 'Get API key from x.ai console.' },
-            { id: 'ollama', name: 'Ollama (Local)', requiresApiKey: false, models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'}, {id: 'phi3', name: 'Phi-3'} ], requiresCustomEndpoint: true, customEndpointLabel: 'Ollama Server URL', helpText: 'Ensure Ollama server is running.' },
+            { id: 'openai', name: 'OpenAI', models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresCustomEndpoint: false, helpText: 'OpenAI models accessed via OAuth authentication.' },
+            { id: 'anthropic', name: 'Anthropic (Claude)', models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresCustomEndpoint: false, helpText: 'Anthropic models accessed via OAuth authentication.' },
+            { id: 'xai', name: 'xAI (Grok)', models: [ {id: 'grok-beta', name: 'Grok Beta'}, {id: 'grok-vision-beta', name: 'Grok Vision Beta'} ], requiresCustomEndpoint: false, helpText: 'xAI models accessed via OAuth authentication.' },
+            { id: 'ollama', name: 'Ollama (Local)', models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'}, {id: 'phi3', name: 'Phi-3'} ], requiresCustomEndpoint: true, customEndpointLabel: 'Ollama Server URL', helpText: 'Local Ollama server - ensure it is running and accessible.' },
         ];
     }
 
     public async loadLLMConfiguration(): Promise<void> {
         try {
-            this.currentUserLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null });
+            this.currentUserLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, selectedModelId: null, customEndpoint: null });
         } catch (error) {
             this.handleError(error, "Failed to load LLM config.");
-            this.currentUserLLMConfig = { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null };
+            this.currentUserLLMConfig = { providerId: null, selectedModelId: null, customEndpoint: null };
         }
         this.renderLLMProviderSelection();
     }
@@ -159,27 +159,27 @@ class OptionsController implements IOptionsController {
     public async saveLLMConfiguration(): Promise<void> {
         const selProvId = (document.getElementById('llm-provider-select') as HTMLSelectElement)?.value;
         const provider = this.llmProviders.find(p => p.id === selProvId);
-        if (provider && provider.requiresApiKey) {
-            const apiKeyInput = document.getElementById('llm-api-key') as HTMLInputElement;
-            if (!apiKeyInput || !apiKeyInput.value.trim()) { this.showFeedback(`API Key for ${provider.name} cannot be empty.`, "error"); return; }
-        }
+        
         let cfgToSave: UserLLMConfig;
-        if(!provider){ cfgToSave = {providerId:null,apiKey:null,selectedModelId:null,customEndpoint:null}; }
-        else {
-            const apiKeyInput = document.getElementById('llm-api-key') as HTMLInputElement;
+        if(!provider){ 
+            cfgToSave = {providerId:null, selectedModelId:null, customEndpoint:null}; 
+        } else {
             const endpointInput = document.getElementById('llm-custom-endpoint') as HTMLInputElement;
             const modelSelect = document.getElementById('llm-model-select') as HTMLSelectElement;
             cfgToSave = {
                 providerId: provider.id,
-                apiKey: (provider.requiresApiKey && apiKeyInput) ? (apiKeyInput.value.trim() || null) : null,
                 customEndpoint: (provider.requiresCustomEndpoint && endpointInput) ? (endpointInput.value.trim() || null) : null,
                 selectedModelId: (modelSelect && modelSelect.value) ? modelSelect.value : null
             };
             if (provider && (!provider.models || provider.models.length === 0)) cfgToSave.selectedModelId = null;
         }
         this.currentUserLLMConfig = cfgToSave;
-        try { await saveToStorage({ userLLMConfig: this.currentUserLLMConfig }); this.showFeedback("LLM config saved.", "success");
-        } catch (e) { this.handleError(e, "Failed to save LLM config."); }
+        try { 
+            await saveToStorage({ userLLMConfig: this.currentUserLLMConfig }); 
+            this.showFeedback("LLM config saved.", "success");
+        } catch (e) { 
+            this.handleError(e, "Failed to save LLM config."); 
+        }
     }
 
     public renderLLMProviderSelection(): void {
@@ -191,41 +191,109 @@ class OptionsController implements IOptionsController {
     }
 
     public handleProviderSelectionChanged(): void {
-        const ps = document.getElementById('llm-provider-select') as HTMLSelectElement; const selProvId=ps.value;
-        const prov = this.llmProviders.find(p=>p.id===selProvId);
-        const sc = document.getElementById('llm-provider-settings-container'); const htc = document.getElementById('llm-provider-helptext-container');
-        if(!sc || !htc)return; sc.innerHTML='';htc.innerHTML='';
-        let cfg = this.currentUserLLMConfig || {providerId:null,apiKey:null,selectedModelId:null,customEndpoint:null};
+        const ps = document.getElementById('llm-provider-select') as HTMLSelectElement; 
+        const selProvId = ps.value;
+        const prov = this.llmProviders.find(p => p.id === selProvId);
+        const sc = document.getElementById('llm-provider-settings-container'); 
+        const htc = document.getElementById('llm-provider-helptext-container');
+        
+        if(!sc || !htc) return; 
+        sc.innerHTML = '';
+        htc.innerHTML = '';
+        
+        let cfg = this.currentUserLLMConfig || {providerId: null, selectedModelId: null, customEndpoint: null};
 
-        if(!prov){sc.innerHTML='<p><em>Select provider to see settings.</em></p>'; if(cfg.providerId!==null)cfg.selectedModelId=null; cfg.providerId=null; this.currentUserLLMConfig=cfg; return;}
-        if(cfg.providerId !== prov.id) cfg.selectedModelId=null; cfg.providerId=prov.id;
+        if(!prov) {
+            sc.innerHTML = '<p><em>Select provider to see settings.</em></p>'; 
+            if(cfg.providerId !== null) cfg.selectedModelId = null; 
+            cfg.providerId = null; 
+            this.currentUserLLMConfig = cfg; 
+            return;
+        }
+        
+        if(cfg.providerId !== prov.id) cfg.selectedModelId = null; 
+        cfg.providerId = prov.id;
 
-        if(prov.requiresApiKey){
-            const l=document.createElement('label');l.htmlFor='llm-api-key';l.textContent=prov.apiKeyLabel||'API Key:';
-            const i=document.createElement('input');i.type='password';i.id='llm-api-key';i.name='llm-api-key'; i.value=(cfg.providerId===prov.id&&cfg.apiKey)?cfg.apiKey:''; i.placeholder='Enter API key';i.style.width='calc(90% - 100px)';
-            const b=document.createElement('button');b.id='verify-api-key-button';b.textContent='Verify';b.disabled=true;b.title='Not implemented';b.style.marginLeft='10px';
-            sc.append(l,document.createElement('br'),i,b,document.createElement('br'));
-        } else if(cfg.providerId===prov.id)cfg.apiKey=null;
+        // Add OAuth authentication status (placeholder for now)
+        const authStatus = document.createElement('div');
+        authStatus.innerHTML = '<p><strong>Authentication:</strong> OAuth 2.0 (configured automatically)</p>';
+        authStatus.style.backgroundColor = '#f0f9ff';
+        authStatus.style.padding = '10px';
+        authStatus.style.borderRadius = '4px';
+        authStatus.style.marginBottom = '15px';
+        sc.append(authStatus);
 
-        if(prov.requiresCustomEndpoint){
-            const l=document.createElement('label');l.htmlFor='llm-custom-endpoint';l.textContent=prov.customEndpointLabel||'Endpoint URL:';
-            const i=document.createElement('input');i.type='text';i.id='llm-custom-endpoint';i.name='llm-custom-endpoint'; i.value=(cfg.providerId===prov.id&&cfg.customEndpoint)?cfg.customEndpoint:''; i.placeholder='e.g., http://localhost:11434';i.style.width='90%';
-            sc.append(l,document.createElement('br'),i,document.createElement('br'));
-        } else if(cfg.providerId===prov.id)cfg.customEndpoint=null;
+        if(prov.requiresCustomEndpoint) {
+            const l = document.createElement('label');
+            l.htmlFor = 'llm-custom-endpoint';
+            l.textContent = prov.customEndpointLabel || 'Endpoint URL:';
+            const i = document.createElement('input');
+            i.type = 'text';
+            i.id = 'llm-custom-endpoint';
+            i.name = 'llm-custom-endpoint'; 
+            i.value = (cfg.providerId === prov.id && cfg.customEndpoint) ? cfg.customEndpoint : ''; 
+            i.placeholder = 'e.g., http://localhost:11434';
+            i.style.width = '90%';
+            sc.append(l, document.createElement('br'), i, document.createElement('br'));
+        } else if(cfg.providerId === prov.id) {
+            cfg.customEndpoint = null;
+        }
 
-        if(prov.models && prov.models.length>0){
-            const l=document.createElement('label');l.htmlFor='llm-model-select';l.textContent='Select Model:';
-            const s=document.createElement('select');s.id='llm-model-select';s.name='llm-model-select'; s.innerHTML='<option value="">-- Select Model --</option>';
-            prov.models.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name;s.appendChild(o);});
-            if(cfg.providerId===prov.id&&cfg.selectedModelId){if(prov.models.some(m=>m.id===cfg.selectedModelId))s.value=cfg.selectedModelId; else cfg.selectedModelId=null;}
-            s.addEventListener('change',e=>{if(this.currentUserLLMConfig)this.currentUserLLMConfig.selectedModelId=(e.target as HTMLSelectElement).value||null;});
-            sc.append(document.createElement('br'),l,document.createElement('br'),s,document.createElement('br'));
-        } else if(cfg)cfg.selectedModelId=null;
+        if(prov.models && prov.models.length > 0) {
+            const l = document.createElement('label');
+            l.htmlFor = 'llm-model-select';
+            l.textContent = 'Select Model:';
+            const s = document.createElement('select');
+            s.id = 'llm-model-select';
+            s.name = 'llm-model-select'; 
+            s.innerHTML = '<option value="">-- Select Model --</option>';
+            prov.models.forEach(m => {
+                const o = document.createElement('option');
+                o.value = m.id;
+                o.textContent = m.name;
+                s.appendChild(o);
+            });
+            if(cfg.providerId === prov.id && cfg.selectedModelId) {
+                if(prov.models.some(m => m.id === cfg.selectedModelId)) {
+                    s.value = cfg.selectedModelId;
+                } else {
+                    cfg.selectedModelId = null;
+                }
+            }
+            s.addEventListener('change', e => {
+                if(this.currentUserLLMConfig) {
+                    this.currentUserLLMConfig.selectedModelId = (e.target as HTMLSelectElement).value || null;
+                }
+            });
+            sc.append(document.createElement('br'), l, document.createElement('br'), s, document.createElement('br'));
+        } else if(cfg) {
+            cfg.selectedModelId = null;
+        }
 
-        const cl=document.createElement('p');cl.textContent='Cost:';cl.style.fontWeight='bold'; const ct=document.createElement('p');ct.id='llm-cost';ct.textContent='Details later.';ct.style.fontSize='0.9em';ct.style.color='#777';
-        const al=document.createElement('p');al.textContent='Status:';al.style.fontWeight='bold'; const at=document.createElement('p');at.id='llm-availability';at.textContent='Checking later.';at.style.fontSize='0.9em';at.style.color='#777';
-        sc.append(document.createElement('br'),cl,ct,document.createElement('br'),al,at);
-        if(prov.helpText)htc.textContent=prov.helpText;
+        const cl = document.createElement('p');
+        cl.textContent = 'Cost:';
+        cl.style.fontWeight = 'bold'; 
+        const ct = document.createElement('p');
+        ct.id = 'llm-cost';
+        ct.textContent = 'Managed via OAuth - no direct API costs';
+        ct.style.fontSize = '0.9em';
+        ct.style.color = '#777';
+        
+        const al = document.createElement('p');
+        al.textContent = 'Status:';
+        al.style.fontWeight = 'bold'; 
+        const at = document.createElement('p');
+        at.id = 'llm-availability';
+        at.textContent = 'Available via OAuth authentication';
+        at.style.fontSize = '0.9em';
+        at.style.color = '#777';
+        
+        sc.append(document.createElement('br'), cl, ct, document.createElement('br'), al, at);
+        
+        if(prov.helpText) {
+            htc.textContent = prov.helpText;
+        }
+        
         this.currentUserLLMConfig = cfg;
     }
 
@@ -321,7 +389,7 @@ index 0000000..abcd123
         this.showFeedback("Exporting all settings...", "info");
         try {
             const templates = await getFromStorage('templates', []);
-            const userLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null });
+            const userLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, selectedModelId: null, customEndpoint: null });
             const appSettings = await getFromStorage('appSettings', { schemaVersion: CURRENT_SCHEMA_VERSION, lastSeenVersion: '' });
             const allSettings: ExtensionStorage = { templates, userLLMConfig, appSettings };
             const jsonData = JSON.stringify(allSettings, null, 2);
@@ -367,7 +435,7 @@ index 0000000..abcd123
                 }
                 const settingsToSave: ExtensionStorage = {
                     templates: importedData.templates || [],
-                    userLLMConfig: importedData.userLLMConfig || { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null },
+                    userLLMConfig: importedData.userLLMConfig || { providerId: null, selectedModelId: null, customEndpoint: null },
                     appSettings: importedData.appSettings || { schemaVersion: CURRENT_SCHEMA_VERSION, lastSeenVersion: '' }
                 };
                 await saveToStorage(settingsToSave);

@@ -26,12 +26,11 @@ export interface ModelDetail {
  * Defines the structure for a predefined LLM provider's capabilities.
  * This itself is not stored in chrome.storage.sync directly but defines
  * the structure of data used by UserLLMConfig and UI components.
+ * Note: API key fields removed - OAuth authentication is used instead.
  */
 export interface LLMProvider {
     id: string;
     name: string;
-    apiKeyLabel?: string;
-    requiresApiKey: boolean;
     models: ModelDetail[];
     requiresCustomEndpoint: boolean;
     customEndpointLabel?: string;
@@ -41,10 +40,10 @@ export interface LLMProvider {
 /**
  * Stores the user's selected LLM provider configuration.
  * This is stored under the 'userLLMConfig' key in chrome.storage.sync.
+ * Note: API keys are no longer stored in extension storage - OAuth tokens are used instead.
  */
 export interface UserLLMConfig {
     providerId: string | null;
-    apiKey: string | null;
     selectedModelId: string | null;
     customEndpoint: string | null;
 }

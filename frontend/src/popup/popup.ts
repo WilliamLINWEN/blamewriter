@@ -23,7 +23,6 @@ interface GenerateRequest {
   llmConfig: {
     providerId: string;
     modelId: string;
-    apiKey: string | null;
     customEndpoint: string | null;
   };
 }
@@ -101,7 +100,7 @@ class PopupController {
                 this.currentUserLLMConfig.providerId = this.llmProviderSelect.value || null;
                 this.currentUserLLMConfig.selectedModelId = null;
             } else {
-                this.currentUserLLMConfig = { providerId: this.llmProviderSelect.value || null, apiKey: null, selectedModelId: null, customEndpoint: null };
+                this.currentUserLLMConfig = { providerId: this.llmProviderSelect.value || null, selectedModelId: null, customEndpoint: null };
             }
             this.renderLLMModelSelection();
             this.validateTokenInput();
@@ -150,9 +149,9 @@ class PopupController {
 
   private initializeLLMProviderData(): void {
     this.availableLLMProviders = [
-        { id: 'openai', name: 'OpenAI', models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresApiKey: true, requiresCustomEndpoint: false },
-        { id: 'anthropic', name: 'Anthropic (Claude)', models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresApiKey: true, requiresCustomEndpoint: false },
-        { id: 'ollama', name: 'Ollama (Local)', models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'} ], requiresApiKey: false, requiresCustomEndpoint: true }
+        { id: 'openai', name: 'OpenAI', models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresCustomEndpoint: false },
+        { id: 'anthropic', name: 'Anthropic (Claude)', models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresCustomEndpoint: false },
+        { id: 'ollama', name: 'Ollama (Local)', models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'} ], requiresCustomEndpoint: true }
     ];
   }
 
@@ -165,7 +164,7 @@ class PopupController {
     this.llmModelSelect.innerHTML = '<option value="">-- Wait --</option>';
 
     try {
-        this.currentUserLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, apiKey: null, selectedModelId: null, customEndpoint: null });
+        this.currentUserLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, selectedModelId: null, customEndpoint: null });
 
         this.llmProviderSelect.innerHTML = '<option value="">-- Select Provider --</option>';
         this.availableLLMProviders.forEach(p => {
@@ -307,7 +306,6 @@ class PopupController {
           llmConfig: {
             providerId: selectedProviderId,
             modelId: selectedModelId,
-            apiKey: this.currentUserLLMConfig.apiKey || null,
             customEndpoint: this.currentUserLLMConfig.customEndpoint || null
         }
       };
