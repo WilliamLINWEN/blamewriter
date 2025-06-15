@@ -31,18 +31,23 @@
                         <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
                             <strong>✅ Currently Supported:</strong><br>
                             <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{DIFF_CONTENT}</code> - The complete git diff content<br>
-                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{title}}</code> - Pull request title<br>
-                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{description}}</code> - PR description<br>
-                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{author}}</code> - PR author name<br>
-                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{source_branch}}</code> - Source branch name<br>
-                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{destination_branch}}</code> - Target branch name<br>
-                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{{diff}}</code> - Git diff content (alias for {DIFF_CONTENT})
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{PULL_REQUEST_TITLE}</code> - Pull request title<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{PULL_REQUEST_BODY}</code> - PR description/body<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{AUTHOR}</code> - PR author name<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{BRANCH_NAME}</code> - Source branch name<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{REPO_NAME}</code> - Repository name<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{COMMIT_MESSAGES}</code> - Commit messages summary<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{DIFF_SUMMARY}</code> - Brief summary of changes<br>
+                            <code style="background-color: #fff; padding: 2px 4px; border-radius: 3px;">{FILES_CHANGED}</code> - List of modified files
                         </div>
                         
                         <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 10px;">
-                            <strong>🚧 Coming in Future Updates:</strong><br>
+                            <strong>🚧 Template Usage Tips:</strong><br>
                             <small style="color: #856404;">
-                                Advanced variables like <code>{file_changes}</code>, <code>{commit_messages}</code>, <code>{lines_added}</code>, etc. are planned for future releases.
+                                • Use single braces with uppercase names: <code>{PLACEHOLDER}</code><br>
+                                • All placeholders are optional - use only what you need<br>
+                                • {DIFF_CONTENT} is the most commonly used placeholder<br>
+                                • Templates are processed by AI, so natural language instructions work well
                             </small>
                         </div>
                     </div>
@@ -53,10 +58,17 @@
                     <textarea readonly style="width: 100%; height: 150px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## 🎯 Overview
 Based on the code changes in this PR, please provide a comprehensive description.
 
-## � Changes Made
+## 📝 Changes Made
 Please analyze the following diff and describe the key changes:
 
 {DIFF_CONTENT}
+
+## 📋 PR Details
+- **Title**: {PULL_REQUEST_TITLE}
+- **Author**: {AUTHOR}
+- **Branch**: {BRANCH_NAME}
+- **Repository**: {REPO_NAME}
+- **Files Modified**: {FILES_CHANGED}
 
 ## 🧪 Testing
 Please suggest appropriate testing strategies based on the code changes.
@@ -70,17 +82,21 @@ Please mention any related issues or dependencies if evident from the code.</tex
                 
                 <details style="margin-bottom: 15px;">
                     <summary style="cursor: pointer; font-weight: bold; color: #dc3545;">🐛 Bug Fix Template</summary>
-                    <textarea readonly style="width: 100%; height: 120px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## 🐛 Bug Fix: {{title}}
-**Author:** {{author}}
-**Branch:** {{source_branch}} → {{destination_branch}}
+                    <textarea readonly style="width: 100%; height: 120px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## 🐛 Bug Fix: {PULL_REQUEST_TITLE}
+**Author:** {AUTHOR}
+**Branch:** {BRANCH_NAME}
+**Repository:** {REPO_NAME}
 
 ## 📝 Issue Description
-{{description}}
+{PULL_REQUEST_BODY}
 
 ## 🔍 Root Cause & Solution
 Based on the following diff, explain the root cause and solution:
 
-{{diff}}
+{DIFF_CONTENT}
+
+## 📋 Files Changed
+{FILES_CHANGED}
 
 ## ✅ Verification
 Please suggest how to verify this fix works correctly.</textarea>
@@ -88,15 +104,20 @@ Please suggest how to verify this fix works correctly.</textarea>
                 
                 <details>
                     <summary style="cursor: pointer; font-weight: bold; color: #6f42c1;">🔧 Refactoring Template</summary>
-                    <textarea readonly style="width: 100%; height: 100px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## ♻️ Refactoring: {{title}}
-**Author:** {{author}}
-**Branch:** {{source_branch}} → {{destination_branch}}
+                    <textarea readonly style="width: 100%; height: 100px; margin-top: 10px; font-family: monospace; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6;">## ♻️ Refactoring: {PULL_REQUEST_TITLE}
+**Author:** {AUTHOR}
+**Branch:** {BRANCH_NAME}
+**Repository:** {REPO_NAME}
 
 ## 📝 Motivation
-{{description}}
+{PULL_REQUEST_BODY}
 
-## � Code Changes
-{{diff}}
+## 🔄 Code Changes
+{DIFF_CONTENT}
+
+## 📋 Summary of Changes
+- **Files Modified**: {FILES_CHANGED}
+- **Commit Messages**: {COMMIT_MESSAGES}
 
 ## 🎯 Benefits
 Please explain the benefits of these refactoring changes.</textarea>

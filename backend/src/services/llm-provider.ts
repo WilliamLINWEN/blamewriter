@@ -284,6 +284,9 @@ Here is the diff content:
       'PULL_REQUEST_TITLE',
       'PULL_REQUEST_BODY',
       'DIFF_CONTENT',
+      'REPO_NAME',
+      'AUTHOR',
+      'FILES_CHANGED',
     ];
     const errors: string[] = [];
     let isValid = true;
@@ -317,7 +320,7 @@ Here is the diff content:
       const contentBetweenBraces = match[1]; // e.g., "WORD", "WORD TOKEN", "NESTED" from {{NESTED}}
 
       // Check if the content is a single valid word (as per our placeholder definition)
-      if (/^\w+$/.test(contentBetweenBraces)) {
+      if (typeof contentBetweenBraces === 'string' && /^\w+$/.test(contentBetweenBraces)) {
         foundPlaceholders.add(contentBetweenBraces); // Store it for the "known placeholders" check
       } else {
         // If it's not a single word, it's an invalid format.

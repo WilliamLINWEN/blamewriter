@@ -41,6 +41,7 @@ const DEFAULT_GENERATION_OPTIONS: Required<GenerateDescriptionOptions> = {
   temperature: 0.7,
   diffSizeLimit: 4000,
   template: '',
+  templateData: {},
 };
 
 /**
@@ -77,9 +78,10 @@ export class OpenAIProvider extends BaseLLMProvider {
   }
 
   /**
-   * Generate PR description using OpenAI
+   * Legacy generatePRDescription method for backward compatibility
+   * @deprecated Use the base class generatePRDescription method instead
    */
-  async generatePRDescription(
+  async generatePRDescriptionLegacy(
     diffContent: string,
     options: GenerateDescriptionOptions = {},
   ): Promise<GeneratedDescription> {
@@ -111,9 +113,21 @@ export class OpenAIProvider extends BaseLLMProvider {
       console.log(`✂️  [OpenAI Provider] Diff truncated to ${processedDiff.length} characters`);
     }
 
-    // Prepare the prompt
+    // Prepare the prompt using proper template processing
     const template = opts.template || this.getDefaultPromptTemplate();
-    const prompt = this.processTemplate(template, processedDiff);
+    
+    // Use templateData if provided, otherwise fall back to legacy diff-only processing
+    let prompt: string;
+    if (opts.templateData) {
+      console.log(`📝 [OpenAI Provider] Using templateData for template processing`);
+      // Update DIFF_CONTENT with the processed diff
+      const finalTemplateData = { ...opts.templateData, DIFF_CONTENT: processedDiff };
+      prompt = this.processTemplate(template, finalTemplateData);
+    } else {
+      console.log(`📝 [OpenAI Provider] Using legacy diff-only template processing`);
+      // Legacy approach: replace {DIFF_CONTENT} placeholder with diff content
+      prompt = template.replace(/{DIFF_CONTENT}/g, processedDiff);
+    }
 
     try {
       // Log the prompt for debugging
@@ -153,6 +167,72 @@ export class OpenAIProvider extends BaseLLMProvider {
       };
     } catch (error: any) {
       console.error(`❌ [OpenAI Provider] Generation failed:`, error);
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Implement the abstract executeLLMGeneration method
+   */
+  protected async executeLLMGeneration(
+    prompt: string,
+    options?: GenerateDescriptionOptions,
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
+    const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
+
+    console.log(`🤖 [OpenAI Provider] Starting LLM generation`);
+    console.log(`🔧 [OpenAI Provider] Using model: ${opts.model}`);
+
+    // Update client with new model if different
+    if (opts.model !== this.client.model) {
+      this.client = new ChatOpenAI({
+        openAIApiKey: this.openaiConfig.apiKey,
+        model: opts.model,
+        temperature: opts.temperature || 0.7,
+        maxRetries: this.openaiConfig.maxRetries || 3,
+        ...(this.openaiConfig.timeout && { timeout: this.openaiConfig.timeout }),
+        ...(this.openaiConfig.organizationId && { organization: this.openaiConfig.organizationId }),
+      });
+    }
+
+    try {
+      // Log the prompt for debugging
+      console.log(`📝 [OpenAI Provider] Generated prompt:\n${prompt}`);
+      console.log(`🌐 [OpenAI Provider] Sending request to OpenAI...`);
+
+      const response = await this.client.invoke([new HumanMessage(prompt)]);
+      
+      const generatedText = response.content as string;
+
+      if (!generatedText) {
+        throw new LLMProviderError(
+          LLMProviderType.OPENAI,
+          LLMProviderErrorCode.INVALID_REQUEST,
+          'OpenAI API returned empty response',
+        );
+      }
+
+      // Extract token usage from response metadata
+      const tokensUsed = response.response_metadata?.tokenUsage?.totalTokens || 0;
+
+      console.log(`✅ [OpenAI Provider] Description generated successfully`);
+      console.log(`📊 [OpenAI Provider] Tokens used: ${tokensUsed}`);
+      console.log(`📝 [OpenAI Provider] Generated description length: ${generatedText.length} characters`);
+
+      return {
+        description: generatedText,
+        model: opts.model,
+        provider: LLMProviderType.OPENAI,
+        tokensUsed,
+        metadata: {
+          temperature: opts.temperature,
+          maxTokens: opts.maxTokens,
+          model: opts.model,
+          promptLength: prompt.length,
+        },
+      };
+    } catch (error) {
+      console.error(`❌ [OpenAI Provider] Error generating description:`, error);
       throw this.transformError(error);
     }
   }

@@ -41,6 +41,7 @@ const DEFAULT_GENERATION_OPTIONS: Required<GenerateDescriptionOptions> = {
   temperature: 0.7,
   diffSizeLimit: 3000, // Conservative for local models
   template: '',
+  templateData: {},
 };
 
 /**
@@ -87,9 +88,69 @@ export class OllamaProvider extends BaseLLMProvider {
   }
 
   /**
-   * Generate PR description using Ollama
+   * Implement the abstract executeLLMGeneration method
    */
-  async generatePRDescription(
+  protected async executeLLMGeneration(
+    prompt: string,
+    options?: GenerateDescriptionOptions,
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
+    const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
+
+    console.log(`🤖 [Ollama Provider] Starting LLM generation`);
+    console.log(`🔧 [Ollama Provider] Using model: ${opts.model}`);
+
+    // Update client with new model if different
+    if (opts.model !== this.client.model) {
+      this.client = new Ollama({
+        baseUrl: this.ollamaConfig.baseUrl || 'http://localhost:11434',
+        model: opts.model,
+        temperature: opts.temperature || 0.7,
+        numCtx: opts.maxTokens || 1000,
+      });
+    }
+
+    try {
+      console.log(`📝 [Ollama Provider] Generated prompt:\n${prompt}`);
+      console.log(`🌐 [Ollama Provider] Sending request to Ollama...`);
+
+      const response = await this.client.invoke(prompt);
+      
+      const generatedText = response;
+
+      if (!generatedText) {
+        throw new LLMProviderError(
+          LLMProviderType.OLLAMA,
+          LLMProviderErrorCode.INVALID_REQUEST,
+          'Ollama returned empty response',
+        );
+      }
+
+      console.log(`✅ [Ollama Provider] Description generated successfully`);
+      console.log(`📝 [Ollama Provider] Generated description length: ${generatedText.length} characters`);
+
+      return {
+        description: generatedText,
+        model: opts.model,
+        provider: LLMProviderType.OLLAMA,
+        tokensUsed: generatedText.length, // Approximate token count
+        metadata: {
+          temperature: opts.temperature,
+          maxTokens: opts.maxTokens,
+          model: opts.model,
+          promptLength: prompt.length,
+        },
+      };
+    } catch (error) {
+      console.error(`❌ [Ollama Provider] Error generating description:`, error);
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Legacy generatePRDescription method for backward compatibility
+   * @deprecated Use the base class generatePRDescription method instead
+   */
+  async generatePRDescriptionLegacy(
     diffContent: string,
     options: GenerateDescriptionOptions = {},
   ): Promise<GeneratedDescription> {
@@ -124,9 +185,21 @@ export class OllamaProvider extends BaseLLMProvider {
       console.log(`✂️  [Ollama Provider] Diff truncated to ${processedDiff.length} characters`);
     }
 
-    // Prepare the prompt
+    // Prepare the prompt using proper template processing
     const template = opts.template || this.getDefaultPromptTemplate();
-    const prompt = this.processTemplate(template, processedDiff);
+    
+    // Use templateData if provided, otherwise fall back to legacy diff-only processing
+    let prompt: string;
+    if (opts.templateData) {
+      console.log(`📝 [Ollama Provider] Using templateData for template processing`);
+      // Update DIFF_CONTENT with the processed diff
+      const finalTemplateData = { ...opts.templateData, DIFF_CONTENT: processedDiff };
+      prompt = this.processTemplate(template, finalTemplateData);
+    } else {
+      console.log(`📝 [Ollama Provider] Using legacy diff-only template processing`);
+      // Legacy approach: replace {DIFF_CONTENT} placeholder with diff content
+      prompt = template.replace(/{DIFF_CONTENT}/g, processedDiff);
+    }
 
     try {
       console.log(`🌐 [Ollama Provider] Sending request to Ollama...`);

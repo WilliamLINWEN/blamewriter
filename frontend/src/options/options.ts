@@ -239,13 +239,13 @@ class OptionsController implements IOptionsController {
             {
                 id:this.generateId(),
                 name:"Default Feature PR",  
-                content:"## 🎯 Overview\nPlease analyze the following code changes and provide a comprehensive PR description.\n\n## 📝 Code Changes\n{DIFF_CONTENT}\n\n## 🧪 Testing Suggestions\nPlease suggest appropriate testing based on the changes above.\n\n## 📦 Deployment Notes\nPlease identify any deployment considerations.",
+                content:"## 🎯 Overview\nPlease analyze the following code changes and provide a comprehensive PR description.\n\n## 📝 Code Changes\n{DIFF_CONTENT}\n\n## 📋 Pull Request Details\n- **Title**: {PULL_REQUEST_TITLE}\n- **Author**: {AUTHOR}\n- **Branch**: {BRANCH_NAME}\n- **Repository**: {REPO_NAME}\n\n## 🧪 Testing Suggestions\nPlease suggest appropriate testing based on the changes above.\n\n## 📦 Deployment Notes\nPlease identify any deployment considerations.",
                 metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
             },
             {
                 id:this.generateId(),
                 name:"Simple Bugfix PR",
-                content:"## 🐛 Bug Fix Summary\nPlease describe what bug was fixed based on the code changes.\n\n## 🔍 Changes Made\n{DIFF_CONTENT}\n\n## ✅ Verification\nPlease suggest how to verify this fix works correctly.",
+                content:"## 🐛 Bug Fix Summary\nPlease describe what bug was fixed based on the code changes.\n\n## 🔍 Changes Made\n{DIFF_CONTENT}\n\n## 📋 PR Information\n- **Author**: {AUTHOR}\n- **Files Changed**: {FILES_CHANGED}\n- **Commit Messages**: {COMMIT_MESSAGES}\n\n## ✅ Verification\nPlease suggest how to verify this fix works correctly.",
                 metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
             }
         ];
@@ -305,12 +305,14 @@ index 0000000..abcd123
         
         const p={
             '{DIFF_CONTENT}': sampleDiff,
-            '{{title}}': 'Add JWT authentication middleware',
-            '{{description}}': 'Implements secure JWT token validation for API endpoints',
-            '{{author}}': 'John Smith',
-            '{{source_branch}}': 'feature/auth-middleware',
-            '{{destination_branch}}': 'main',
-            '{{diff}}': sampleDiff
+            '{PULL_REQUEST_TITLE}': 'Add JWT authentication middleware',
+            '{PULL_REQUEST_BODY}': 'Implements secure JWT token validation for API endpoints',
+            '{AUTHOR}': 'John Smith',
+            '{BRANCH_NAME}': 'feature/auth-middleware',
+            '{REPO_NAME}': 'my-project',
+            '{COMMIT_MESSAGES}': 'feat: add JWT middleware\nfeat: implement token validation',
+            '{DIFF_SUMMARY}': 'Added JWT authentication middleware with token validation',
+            '{FILES_CHANGED}': 'src/auth/middleware.ts'
         };
         for(const[k,v]of Object.entries(p))c=c.split(k).join(v); pa.textContent=c;this.showFeedback("Preview updated with sample PR data.","info");
     }

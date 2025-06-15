@@ -279,29 +279,39 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
 
     console.log(`🤖 [Generate V2] Using provider: ${type}`);
 
-    // Process template with PR information (consistent with generate-v2.ts)
-    console.log(`📝 [Generate V2] Processing template with PR information...`);
-    const processedTemplate = request.template.content
-      .replace('{{title}}', prData.title)
-      .replace('{{description}}', prData.description || 'No description provided')
-      .replace('{{author}}', prData.author?.display_name || 'Unknown')
-      .replace('{{source_branch}}', prData.source?.branch?.name || 'Unknown')
-      .replace('{{destination_branch}}', prData.destination?.branch?.name || 'Unknown')
-      .replace('{{diff}}', prData.diff.diff || 'No diff available')
-      .replace('{DIFF_CONTENT}', prData.diff.diff || 'No diff available'); // Support both formats
-
-    console.log(`📝 [Generate V2] Template processed with PR context`);
-
-    // Generate description
+    // Use provider's built-in template processing instead of manual replacement
+    console.log(`📝 [Generate V2] Using provider template processing with standardized placeholders...`);
+    
+    // Prepare generation options with template processing
     const generationOptions = {
       model: request.llmConfig.modelId,
-      template: processedTemplate,
+      template: request.template.content,
+      templateData: {
+        // Standard placeholders (using {PLACEHOLDER} format)
+        BRANCH_NAME: prData.source?.branch?.name || 'Unknown',
+        COMMIT_MESSAGES: '', // TODO: Extract from PR data when available
+        DIFF_SUMMARY: `Diff size: ${prData.diff.size} characters${prData.diff.truncated ? ' (truncated)' : ''}`,
+        PULL_REQUEST_TITLE: prData.title || 'No title provided',
+        PULL_REQUEST_BODY: prData.description || 'No description provided',
+        DIFF_CONTENT: diffContent || 'No diff available',
+        
+        // Legacy placeholders (using {{placeholder}} format for backward compatibility)
+        // Note: These are supported but {PLACEHOLDER} format is preferred
+        title: prData.title || 'No title provided',
+        description: prData.description || 'No description provided',
+        author: prData.author?.display_name || 'Unknown',
+        source_branch: prData.source?.branch?.name || 'Unknown',
+        destination_branch: prData.destination?.branch?.name || 'Unknown',
+        diff: diffContent || 'No diff available',
+      },
       ...(request.llmConfig.parameters?.maxTokens && { maxTokens: request.llmConfig.parameters.maxTokens }),
       ...(request.llmConfig.parameters?.temperature && { temperature: request.llmConfig.parameters.temperature }),
       ...(request.options?.diffProcessing?.maxChunkSize && { diffSizeLimit: request.options.diffProcessing.maxChunkSize }),
     };
 
-    const result = await provider.generatePRDescription(diffContent, generationOptions);
+    // Generate description using base class template processing
+    // Note: Using the improved base class method that handles template validation and processing
+    const result = await provider.generatePRDescription(generationOptions);
 
     console.log(`✅ [Generate V2] Description generated successfully`);
     console.log(`📝 [Generate V2] Result: ${result.description.length} characters`);

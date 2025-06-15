@@ -79,6 +79,7 @@ const DEFAULT_GENERATION_OPTIONS: Required<GenerateDescriptionOptions> = {
   temperature: 0.7,
   diffSizeLimit: 6000, // Conservative limit for Grok
   template: '',
+  templateData: {},
 };
 
 /**
@@ -138,9 +139,74 @@ export class XAIProvider extends BaseLLMProvider {
   }
 
   /**
-   * Generate PR description using xAI Grok
+   * Implement the abstract executeLLMGeneration method
    */
-  async generatePRDescription(
+  protected async executeLLMGeneration(
+    prompt: string,
+    options?: GenerateDescriptionOptions,
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
+    const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
+
+    console.log(`🤖 [xAI Provider] Starting LLM generation`);
+    console.log(`🔧 [xAI Provider] Using model: ${opts.model}`);
+
+    try {
+      console.log(`📝 [xAI Provider] Generated prompt:\n${prompt}`);
+      console.log(`🌐 [xAI Provider] Sending request to xAI...`);
+
+      const response = await this.client.post('/chat/completions', {
+        model: opts.model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        max_tokens: opts.maxTokens,
+        temperature: opts.temperature,
+        stream: false,
+      });
+
+      const generatedText = response.data?.choices?.[0]?.message?.content;
+
+      if (!generatedText) {
+        throw new LLMProviderError(
+          LLMProviderType.XAI,
+          LLMProviderErrorCode.INVALID_REQUEST,
+          'xAI API returned empty response',
+        );
+      }
+
+      // Extract token usage from response
+      const tokensUsed = response.data?.usage?.total_tokens || 0;
+
+      console.log(`✅ [xAI Provider] Description generated successfully`);
+      console.log(`📊 [xAI Provider] Tokens used: ${tokensUsed}`);
+      console.log(`📝 [xAI Provider] Generated description length: ${generatedText.length} characters`);
+
+      return {
+        description: generatedText,
+        model: opts.model,
+        provider: LLMProviderType.XAI,
+        tokensUsed,
+        metadata: {
+          temperature: opts.temperature,
+          maxTokens: opts.maxTokens,
+          model: opts.model,
+          promptLength: prompt.length,
+        },
+      };
+    } catch (error) {
+      console.error(`❌ [xAI Provider] Error generating description:`, error);
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Legacy generatePRDescription method for backward compatibility
+   * @deprecated Use the base class generatePRDescription method instead
+   */
+  async generatePRDescriptionLegacy(
     diffContent: string,
     options: GenerateDescriptionOptions = {},
   ): Promise<GeneratedDescription> {
@@ -160,9 +226,21 @@ export class XAIProvider extends BaseLLMProvider {
       console.log(`✂️  [xAI Provider] Diff truncated to ${processedDiff.length} characters`);
     }
 
-    // Prepare the prompt
+    // Prepare the prompt using proper template processing
     const template = opts.template || this.getDefaultPromptTemplate();
-    const prompt = this.processTemplate(template, processedDiff);
+    
+    // Use templateData if provided, otherwise fall back to legacy diff-only processing
+    let prompt: string;
+    if (opts.templateData) {
+      console.log(`📝 [xAI Provider] Using templateData for template processing`);
+      // Update DIFF_CONTENT with the processed diff
+      const finalTemplateData = { ...opts.templateData, DIFF_CONTENT: processedDiff };
+      prompt = this.processTemplate(template, finalTemplateData);
+    } else {
+      console.log(`📝 [xAI Provider] Using legacy diff-only template processing`);
+      // Legacy approach: replace {DIFF_CONTENT} placeholder with diff content
+      prompt = template.replace(/{DIFF_CONTENT}/g, processedDiff);
+    }
 
     const requestPayload: XAICompletionRequest = {
       model: opts.model,
