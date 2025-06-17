@@ -24,6 +24,7 @@
     "type-check:workspaces": "npm run type-check --workspaces"
   },
   "devDependencies": {
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
@@ -31,8 +32,10 @@
     "eslint": "^8.45.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "jsdom": "^26.1.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.1.0"
+    "typescript": "^5.1.0",
+    "vitest": "^3.2.3"
   },
   "engines": {
     "node": ">=18.0.0",
