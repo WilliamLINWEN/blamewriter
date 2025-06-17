@@ -11,7 +11,8 @@
     "prepare": "npm run clean && npm run build",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.js",
-    "lint:fix": "eslint src --ext .ts,.js --fix"
+    "lint:fix": "eslint src --ext .ts,.js --fix",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.254",
