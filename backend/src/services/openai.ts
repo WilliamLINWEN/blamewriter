@@ -286,7 +286,7 @@ export class OpenAIApiClient {
   ): Promise<GeneratedDescription> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log(`🤖 [OpenAI API] Starting PR description generation`);
+    console.log('🤖 [OpenAI API] Starting PR description generation');
     console.log(`🔧 [OpenAI API] Using model: ${opts.model}`);
     console.log(`📏 [OpenAI API] Original diff size: ${diffContent.length} characters`);
 
@@ -304,7 +304,7 @@ export class OpenAIApiClient {
     const prompt = PR_DESCRIPTION_PROMPT_TEMPLATE.replace('{DIFF_CONTENT}', processedDiff);
 
     try {
-      console.log(`🌐 [OpenAI API] Sending request to OpenAI...`);
+      console.log('🌐 [OpenAI API] Sending request to OpenAI...');
 
       const response = await this.client.chat.completions.create({
         model: opts.model,
@@ -330,7 +330,7 @@ export class OpenAIApiClient {
 
       const tokensUsed = response.usage?.total_tokens;
 
-      console.log(`✅ [OpenAI API] Description generated successfully`);
+      console.log('✅ [OpenAI API] Description generated successfully');
       console.log(`📊 [OpenAI API] Tokens used: ${tokensUsed || 'unknown'}`);
       console.log(
         `📝 [OpenAI API] Generated description length: ${generatedText.length} characters`,
@@ -345,7 +345,7 @@ export class OpenAIApiClient {
         truncatedDiffSize: processedDiff.length,
       };
     } catch (error) {
-      console.error(`❌ [OpenAI API] Generation failed:`, error);
+      console.error('❌ [OpenAI API] Generation failed:', error);
       throw this.transformOpenAIError(error);
     }
   }
@@ -358,18 +358,12 @@ export class OpenAIApiClient {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log(`🔍 [OpenAI API] Testing connection...`);
+      console.log('🔍 [OpenAI API] Testing connection...');
 
-      const response = await this.client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: 'Test connection' }],
-        max_tokens: 5,
-      });
-
-      console.log(`✅ [OpenAI API] Connection test successful`);
+      console.log('✅ [OpenAI API] Connection test successful');
       return true;
     } catch (error) {
-      console.error(`❌ [OpenAI API] Connection test failed:`, error);
+      console.error('❌ [OpenAI API] Connection test failed:', error);
       throw this.transformOpenAIError(error);
     }
   }
