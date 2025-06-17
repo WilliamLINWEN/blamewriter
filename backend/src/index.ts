@@ -50,7 +50,7 @@ app.use('/api/v1', generateRouter);
 app.use('/api/v2', multiLLMRouter); // Enhanced multi-LLM provider route
 
 // Basic error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response) => {
   console.error('Error occurred:', err);
 
   // Don't expose internal error details in production
@@ -77,7 +77,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
   console.log(`📊 Health check available at http://localhost:${PORT}/health`);
   console.log(`🌍 Environment: ${envConfig.NODE_ENV}`);
-  console.log(`✅ All environment variables validated and loaded successfully`);
+  console.log('✅ All environment variables validated and loaded successfully');
 });
 
 export default app;
