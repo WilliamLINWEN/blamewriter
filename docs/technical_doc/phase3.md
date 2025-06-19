@@ -78,23 +78,6 @@
       TOKEN_STORAGE_KEY: 'bitbucket_auth',
     };
     ```
-  - Chrome擴展的EXTENSION_ID獲取方式
-    可以在 `manifest.json` 中定義，或在構建過程中動態注入。
-    1. 開發階段獲取： 當您在Chrome中載入未打包的擴展程式時，Chrome會為您的擴展分配一個唯一的ID。您可以通過以下方式獲取：
-    `const extensionId = chrome.runtime.id;`
-    然後您可以在代碼中動態構建重定向URL：
-    `const REDIRECT_URL = `https://${chrome.runtime.id}.chromiumapp.org/callback`;`
-    2. 開發階段設置固定ID（可選）： 如果您希望在開發過程中使用固定的擴展ID，可以在manifest.json中添加key字段：
-
-    ```json
-    {
-      "name": "BlameWriter",
-      "version": "1.0",
-      "manifest_version": 3,
-      "key": "YOUR_DEVELOPMENT_KEY"
-    }
-    ```
-
 - **`content.js`**:
   1.  使用 `MutationObserver` 來監聽頁面 DOM 變化，等待 PR 描述的 `textarea` 出現。
   2.  一旦目標元素出現，就在其附近動態創建並插入一個「✨ AI 生成描述」按鈕。
@@ -106,6 +89,7 @@
 #### **3. 生產準備**
 
 - **後端**:
+  - 整合 Sentry SDK，捕獲所有未處理的異常。
   - 添加基礎的日誌記錄，特別是在 API 調用和關鍵邏輯點。
   - 實現 OAuth 相關的路由和控制器：
     ```typescript
