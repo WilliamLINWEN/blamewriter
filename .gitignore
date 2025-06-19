@@ -175,7 +175,6 @@ web-store-assets/
 .vscode/
 .github
 .idea/
-.junie
 *.swp
 *.swo
 *~
