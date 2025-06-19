@@ -58,7 +58,7 @@ function validateBitbucketDomain(url: URL): void {
 function validatePRPath(url: URL): void {
   // Expected format: /workspace/repo/pull-requests/123
   // Optional trailing parts: /activity, /diff, etc.
-  const pathPattern = /^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:\/.*)?$/;
+  const pathPattern = /^\/([^\/]+)\/([^\/]+)\/pull-requests\/(\d+)(?:\/.*)?$/;
 
   if (!pathPattern.test(url.pathname)) {
     throw new BitbucketUrlError(
@@ -73,7 +73,7 @@ function validatePRPath(url: URL): void {
  * Extracts workspace, repo, and PR ID from a validated URL path
  */
 function extractPRComponents(url: URL): { workspace: string; repo: string; prId: string } {
-  const pathPattern = /^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:\/.*)?$/;
+  const pathPattern = /^\/([^\/]+)\/([^\/]+)\/pull-requests\/(\d+)(?:\/.*)?$/;
   const match = url.pathname.match(pathPattern);
 
   if (!match) {

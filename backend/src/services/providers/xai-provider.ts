@@ -92,9 +92,9 @@ export class XAIProvider extends BaseLLMProvider {
   constructor(config: XAIProviderConfig) {
     const mergedConfig = { ...DEFAULT_CONFIG, ...config };
     super(LLMProviderType.XAI, mergedConfig);
-
+    
     this.xaiConfig = mergedConfig as XAIProviderConfig;
-
+    
     // Validate API key
     if (!config.apiKey || config.apiKey.trim() === '') {
       throw new LLMProviderError(
@@ -109,32 +109,32 @@ export class XAIProvider extends BaseLLMProvider {
       baseURL: mergedConfig.baseUrl,
       timeout: mergedConfig.timeout,
       headers: {
-        Authorization: `Bearer ${config.apiKey.trim()}`,
+        'Authorization': `Bearer ${config.apiKey.trim()}`,
         'Content-Type': 'application/json',
       },
     });
 
     // Add request/response interceptors for logging and error handling
     this.client.interceptors.request.use(
-      config => {
+      (config) => {
         console.log(`🌐 [xAI Provider] Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
-      error => {
-        console.error('❌ [xAI Provider] Request error:', error);
+      (error) => {
+        console.error(`❌ [xAI Provider] Request error:`, error);
         return Promise.reject(error);
-      },
+      }
     );
 
     this.client.interceptors.response.use(
-      response => {
+      (response) => {
         console.log(`✅ [xAI Provider] Response: ${response.status} ${response.statusText}`);
         return response;
       },
-      error => {
-        console.error('❌ [xAI Provider] Response error:', error);
+      (error) => {
+        console.error(`❌ [xAI Provider] Response error:`, error);
         return Promise.reject(error);
-      },
+      }
     );
   }
 
@@ -144,17 +144,15 @@ export class XAIProvider extends BaseLLMProvider {
   protected async executeLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
-  ): Promise<
-    Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>
-  > {
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [xAI Provider] Starting LLM generation');
+    console.log(`🤖 [xAI Provider] Starting LLM generation`);
     console.log(`🔧 [xAI Provider] Using model: ${opts.model}`);
 
     try {
       console.log(`📝 [xAI Provider] Generated prompt:\n${prompt}`);
-      console.log('🌐 [xAI Provider] Sending request to xAI...');
+      console.log(`🌐 [xAI Provider] Sending request to xAI...`);
 
       const response = await this.client.post('/chat/completions', {
         model: opts.model,
@@ -182,11 +180,9 @@ export class XAIProvider extends BaseLLMProvider {
       // Extract token usage from response
       const tokensUsed = response.data?.usage?.total_tokens || 0;
 
-      console.log('✅ [xAI Provider] Description generated successfully');
+      console.log(`✅ [xAI Provider] Description generated successfully`);
       console.log(`📊 [xAI Provider] Tokens used: ${tokensUsed}`);
-      console.log(
-        `📝 [xAI Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`📝 [xAI Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -201,7 +197,7 @@ export class XAIProvider extends BaseLLMProvider {
         },
       };
     } catch (error) {
-      console.error('❌ [xAI Provider] Error generating description:', error);
+      console.error(`❌ [xAI Provider] Error generating description:`, error);
       throw this.transformError(error);
     }
   }
@@ -216,7 +212,7 @@ export class XAIProvider extends BaseLLMProvider {
   ): Promise<GeneratedDescription> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [xAI Provider] Starting PR description generation');
+    console.log(`🤖 [xAI Provider] Starting PR description generation`);
     console.log(`🔧 [xAI Provider] Using model: ${opts.model}`);
     console.log(`📏 [xAI Provider] Original diff size: ${diffContent.length} characters`);
 
@@ -232,16 +228,16 @@ export class XAIProvider extends BaseLLMProvider {
 
     // Prepare the prompt using proper template processing
     const template = opts.template || this.getDefaultPromptTemplate();
-
+    
     // Use templateData if provided, otherwise fall back to legacy diff-only processing
     let prompt: string;
     if (opts.templateData) {
-      console.log('📝 [xAI Provider] Using templateData for template processing');
+      console.log(`📝 [xAI Provider] Using templateData for template processing`);
       // Update DIFF_CONTENT with the processed diff
       const finalTemplateData = { ...opts.templateData, DIFF_CONTENT: processedDiff };
       prompt = this.processTemplate(template, finalTemplateData);
     } else {
-      console.log('📝 [xAI Provider] Using legacy diff-only template processing');
+      console.log(`📝 [xAI Provider] Using legacy diff-only template processing`);
       // Legacy approach: replace {DIFF_CONTENT} placeholder with diff content
       prompt = template.replace(/{DIFF_CONTENT}/g, processedDiff);
     }
@@ -260,13 +256,10 @@ export class XAIProvider extends BaseLLMProvider {
     };
 
     try {
-      console.log('🌐 [xAI Provider] Sending request to xAI...');
+      console.log(`🌐 [xAI Provider] Sending request to xAI...`);
 
-      const response = await this.client.post<XAICompletionResponse>(
-        '/chat/completions',
-        requestPayload,
-      );
-
+      const response = await this.client.post<XAICompletionResponse>('/chat/completions', requestPayload);
+      
       const generatedText = response.data.choices[0]?.message?.content;
 
       if (!generatedText) {
@@ -279,11 +272,9 @@ export class XAIProvider extends BaseLLMProvider {
 
       const tokensUsed = response.data.usage?.total_tokens || 0;
 
-      console.log('✅ [xAI Provider] Description generated successfully');
+      console.log(`✅ [xAI Provider] Description generated successfully`);
       console.log(`📊 [xAI Provider] Tokens used: ${tokensUsed}`);
-      console.log(
-        `📝 [xAI Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`📝 [xAI Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -298,7 +289,7 @@ export class XAIProvider extends BaseLLMProvider {
         },
       };
     } catch (error: any) {
-      console.error('❌ [xAI Provider] Generation failed:', error);
+      console.error(`❌ [xAI Provider] Generation failed:`, error);
       throw this.transformError(error);
     }
   }
@@ -308,7 +299,7 @@ export class XAIProvider extends BaseLLMProvider {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log('🔍 [xAI Provider] Testing connection...');
+      console.log(`🔍 [xAI Provider] Testing connection...`);
 
       const testPayload: XAICompletionRequest = {
         model: 'grok-beta',
@@ -318,10 +309,10 @@ export class XAIProvider extends BaseLLMProvider {
 
       await this.client.post<XAICompletionResponse>('/chat/completions', testPayload);
 
-      console.log('✅ [xAI Provider] Connection test successful');
+      console.log(`✅ [xAI Provider] Connection test successful`);
       return true;
     } catch (error: any) {
-      console.error('❌ [xAI Provider] Connection test failed:', error);
+      console.error(`❌ [xAI Provider] Connection test failed:`, error);
       throw this.transformError(error);
     }
   }
@@ -332,7 +323,10 @@ export class XAIProvider extends BaseLLMProvider {
   getCapabilities(): ProviderCapabilities {
     return {
       maxTokens: 131072, // Grok's context window
-      supportedModels: ['grok-beta', 'grok-vision-beta'],
+      supportedModels: [
+        'grok-beta',
+        'grok-vision-beta',
+      ],
       supportsStreaming: true,
       costPerToken: {
         input: 0.000005, // Estimated, actual pricing may vary

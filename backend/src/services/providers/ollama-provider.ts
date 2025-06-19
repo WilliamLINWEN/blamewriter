@@ -19,7 +19,7 @@ import {
  */
 export interface OllamaProviderConfig extends LLMProviderConfig {
   baseUrl: string; // Ollama endpoint URL (required)
-  model: string; // Model name (required)
+  model: string;   // Model name (required)
 }
 
 /**
@@ -27,7 +27,7 @@ export interface OllamaProviderConfig extends LLMProviderConfig {
  */
 const DEFAULT_CONFIG = {
   timeout: 120000, // 2 minutes (local inference can be slower)
-  maxRetries: 2, // Fewer retries for local
+  maxRetries: 2,   // Fewer retries for local
   baseUrl: 'http://localhost:11434',
   model: 'llama2',
 };
@@ -54,9 +54,9 @@ export class OllamaProvider extends BaseLLMProvider {
   constructor(config: OllamaProviderConfig) {
     const mergedConfig = { ...DEFAULT_CONFIG, ...config };
     super(LLMProviderType.OLLAMA, mergedConfig);
-
+    
     this.ollamaConfig = mergedConfig as OllamaProviderConfig;
-
+    
     // Validate required config
     if (!config.baseUrl || config.baseUrl.trim() === '') {
       throw new LLMProviderError(
@@ -79,10 +79,10 @@ export class OllamaProvider extends BaseLLMProvider {
       baseUrl: config.baseUrl.trim(),
       model: config.model.trim(),
       temperature: 0.7,
-      ...(mergedConfig.timeout && {
-        requestOptions: {
-          timeout: mergedConfig.timeout,
-        },
+      ...(mergedConfig.timeout && { 
+        requestOptions: { 
+          timeout: mergedConfig.timeout 
+        } 
       }),
     });
   }
@@ -93,12 +93,10 @@ export class OllamaProvider extends BaseLLMProvider {
   protected async executeLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
-  ): Promise<
-    Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>
-  > {
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [Ollama Provider] Starting LLM generation');
+    console.log(`🤖 [Ollama Provider] Starting LLM generation`);
     console.log(`🔧 [Ollama Provider] Using model: ${opts.model}`);
 
     // Update client with new model if different
@@ -113,10 +111,10 @@ export class OllamaProvider extends BaseLLMProvider {
 
     try {
       console.log(`📝 [Ollama Provider] Generated prompt:\n${prompt}`);
-      console.log('🌐 [Ollama Provider] Sending request to Ollama...');
+      console.log(`🌐 [Ollama Provider] Sending request to Ollama...`);
 
       const response = await this.client.invoke(prompt);
-
+      
       const generatedText = response;
 
       if (!generatedText) {
@@ -127,10 +125,8 @@ export class OllamaProvider extends BaseLLMProvider {
         );
       }
 
-      console.log('✅ [Ollama Provider] Description generated successfully');
-      console.log(
-        `📝 [Ollama Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`✅ [Ollama Provider] Description generated successfully`);
+      console.log(`📝 [Ollama Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -145,7 +141,7 @@ export class OllamaProvider extends BaseLLMProvider {
         },
       };
     } catch (error) {
-      console.error('❌ [Ollama Provider] Error generating description:', error);
+      console.error(`❌ [Ollama Provider] Error generating description:`, error);
       throw this.transformError(error);
     }
   }
@@ -160,7 +156,7 @@ export class OllamaProvider extends BaseLLMProvider {
   ): Promise<GeneratedDescription> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [Ollama Provider] Starting PR description generation');
+    console.log(`🤖 [Ollama Provider] Starting PR description generation`);
     console.log(`🔧 [Ollama Provider] Using model: ${opts.model}`);
     console.log(`🌐 [Ollama Provider] Endpoint: ${this.ollamaConfig.baseUrl}`);
     console.log(`📏 [Ollama Provider] Original diff size: ${diffContent.length} characters`);
@@ -171,10 +167,10 @@ export class OllamaProvider extends BaseLLMProvider {
         baseUrl: this.ollamaConfig.baseUrl,
         model: opts.model,
         temperature: opts.temperature || 0.7,
-        ...(this.ollamaConfig.timeout && {
-          requestOptions: {
-            timeout: this.ollamaConfig.timeout,
-          },
+        ...(this.ollamaConfig.timeout && { 
+          requestOptions: { 
+            timeout: this.ollamaConfig.timeout 
+          } 
         }),
       });
     }
@@ -191,25 +187,25 @@ export class OllamaProvider extends BaseLLMProvider {
 
     // Prepare the prompt using proper template processing
     const template = opts.template || this.getDefaultPromptTemplate();
-
+    
     // Use templateData if provided, otherwise fall back to legacy diff-only processing
     let prompt: string;
     if (opts.templateData) {
-      console.log('📝 [Ollama Provider] Using templateData for template processing');
+      console.log(`📝 [Ollama Provider] Using templateData for template processing`);
       // Update DIFF_CONTENT with the processed diff
       const finalTemplateData = { ...opts.templateData, DIFF_CONTENT: processedDiff };
       prompt = this.processTemplate(template, finalTemplateData);
     } else {
-      console.log('📝 [Ollama Provider] Using legacy diff-only template processing');
+      console.log(`📝 [Ollama Provider] Using legacy diff-only template processing`);
       // Legacy approach: replace {DIFF_CONTENT} placeholder with diff content
       prompt = template.replace(/{DIFF_CONTENT}/g, processedDiff);
     }
 
     try {
-      console.log('🌐 [Ollama Provider] Sending request to Ollama...');
+      console.log(`🌐 [Ollama Provider] Sending request to Ollama...`);
 
       const response = await this.client.invoke(prompt);
-
+      
       const generatedText = response as string;
 
       if (!generatedText) {
@@ -223,11 +219,9 @@ export class OllamaProvider extends BaseLLMProvider {
       // Ollama doesn't provide token usage info through LangChain
       const estimatedTokens = Math.ceil((prompt.length + generatedText.length) / 4);
 
-      console.log('✅ [Ollama Provider] Description generated successfully');
+      console.log(`✅ [Ollama Provider] Description generated successfully`);
       console.log(`📊 [Ollama Provider] Estimated tokens: ${estimatedTokens}`);
-      console.log(
-        `📝 [Ollama Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`📝 [Ollama Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -243,7 +237,7 @@ export class OllamaProvider extends BaseLLMProvider {
         },
       };
     } catch (error: any) {
-      console.error('❌ [Ollama Provider] Generation failed:', error);
+      console.error(`❌ [Ollama Provider] Generation failed:`, error);
       throw this.transformError(error);
     }
   }
@@ -253,7 +247,7 @@ export class OllamaProvider extends BaseLLMProvider {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log('🔍 [Ollama Provider] Testing connection...');
+      console.log(`🔍 [Ollama Provider] Testing connection...`);
       console.log(`🌐 [Ollama Provider] Endpoint: ${this.ollamaConfig.baseUrl}`);
       console.log(`🤖 [Ollama Provider] Model: ${this.ollamaConfig.model}`);
 
@@ -265,10 +259,10 @@ export class OllamaProvider extends BaseLLMProvider {
 
       await testClient.invoke('Test connection. Respond with "OK".');
 
-      console.log('✅ [Ollama Provider] Connection test successful');
+      console.log(`✅ [Ollama Provider] Connection test successful`);
       return true;
     } catch (error: any) {
-      console.error('❌ [Ollama Provider] Connection test failed:', error);
+      console.error(`❌ [Ollama Provider] Connection test failed:`, error);
       throw this.transformError(error);
     }
   }
@@ -325,21 +319,16 @@ export class OllamaProvider extends BaseLLMProvider {
     try {
       // Try to fetch available models from Ollama API
       const response = await fetch(`${this.ollamaConfig.baseUrl}/api/tags`);
-
+      
       if (response.ok) {
-        const data = (await response.json()) as any;
-        return (
-          data.models?.map((model: any) => model.name) || this.getCapabilities().supportedModels
-        );
+        const data = await response.json() as any;
+        return data.models?.map((model: any) => model.name) || this.getCapabilities().supportedModels;
       }
-
+      
       // Fallback to static list if API call fails
       return this.getCapabilities().supportedModels;
     } catch (error) {
-      console.warn(
-        '⚠️  [Ollama Provider] Could not fetch available models, using default list:',
-        error,
-      );
+      console.warn(`⚠️  [Ollama Provider] Could not fetch available models, using default list:`, error);
       return this.getCapabilities().supportedModels;
     }
   }

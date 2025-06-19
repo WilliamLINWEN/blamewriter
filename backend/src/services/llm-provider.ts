@@ -126,9 +126,7 @@ export abstract class BaseLLMProvider {
    * Generate a PR description using a template and provided data.
    * This method orchestrates template selection, validation, processing, and then calls a specific LLM provider.
    */
-  public async generatePRDescription(
-    options?: GenerateDescriptionOptions,
-  ): Promise<GeneratedDescription> {
+  public async generatePRDescription(options?: GenerateDescriptionOptions): Promise<GeneratedDescription> {
     const templateData = options?.templateData || {};
     let diffContent = templateData.DIFF_CONTENT || ''; // Get diff content from templateData
 
@@ -181,9 +179,7 @@ export abstract class BaseLLMProvider {
   protected abstract executeLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
-  ): Promise<
-    Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>
-  >;
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>>;
 
   /**
    * Test the connection to the LLM provider
@@ -231,10 +227,7 @@ export abstract class BaseLLMProvider {
    */
   // This method will likely be refactored or used differently now that diffContent comes from templateData
   // For now, let's assume the raw diffContent is available in options.templateData.DIFF_CONTENT if needed for truncation.
-  protected truncateDiff(
-    diffContent: string,
-    limit: number,
-  ): { truncated: string; wasTruncated: boolean } {
+  protected truncateDiff(diffContent: string, limit: number): { truncated: string; wasTruncated: boolean } {
     if (diffContent.length <= limit) {
       return { truncated: diffContent, wasTruncated: false };
     }
@@ -272,14 +265,8 @@ Here is the diff content:
     if (templateVars) {
       for (const key in templateVars) {
         // Ensure the key exists in templateVars to avoid replacing with "undefined"
-        if (
-          Object.prototype.hasOwnProperty.call(templateVars, key) &&
-          templateVars[key] !== undefined
-        ) {
-          processedTemplate = processedTemplate.replace(
-            new RegExp(`{${key}}`, 'g'),
-            templateVars[key],
-          );
+        if (Object.prototype.hasOwnProperty.call(templateVars, key) && templateVars[key] !== undefined) {
+          processedTemplate = processedTemplate.replace(new RegExp(`{${key}}`, 'g'), templateVars[key]);
         }
       }
     }
@@ -311,6 +298,7 @@ Here is the diff content:
     }
 
     // Placeholder syntax and known placeholder validation
+    const placeholderRegex = /{(\w+)}/g; // Matches valid placeholders like {WORD}
     const allContentBetweenBracesRegex = /{([^{}]+)}/g; // Finds all content between {}
     let match;
 
@@ -336,9 +324,7 @@ Here is the diff content:
         foundPlaceholders.add(contentBetweenBraces); // Store it for the "known placeholders" check
       } else {
         // If it's not a single word, it's an invalid format.
-        errors.push(
-          `Invalid placeholder format: ${match[0]}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).`,
-        );
+        errors.push(`Invalid placeholder format: ${match[0]}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).`);
         isValid = false;
       }
     }
@@ -360,7 +346,7 @@ Here is the diff content:
  */
 export function formatLLMProviderError(error: LLMProviderError): string {
   const providerName = error.provider.toUpperCase();
-
+  
   switch (error.code) {
     case LLMProviderErrorCode.INVALID_API_KEY:
       return `Invalid ${providerName} API key. Please check your configuration.`;

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Background script for Bitbucket PR Helper extension
 // Phase 1 MVP implementation - Service Worker
 
@@ -114,12 +113,7 @@ class BackgroundService {
 
     try {
       // Make HTTP request to backend API
-      const apiResponse = await this.callBackendAPI(
-        request.prUrl,
-        request.token,
-        request.templateContent,
-        request.llmConfig,
-      );
+      const apiResponse = await this.callBackendAPI(request.prUrl, request.token, request.templateContent, request.llmConfig);
       return this.processApiResponse(apiResponse);
     } catch (error) {
       console.error('Error in generate request:', error);
@@ -137,14 +131,14 @@ class BackgroundService {
     }
 
     // Validate URL format
-    const urlPattern = /^https:\/\/bitbucket\.org\/[^/]+\/[^/]+\/pull-requests\/\d+/;
+    const urlPattern = /^https:\/\/bitbucket\.org\/[^\/]+\/[^\/]+\/pull-requests\/\d+/;
     if (!urlPattern.test(request.prUrl)) {
       return 'Invalid Bitbucket PR URL format';
     }
 
     // Basic token validation
     if (request.token.length < 20) {
-      // if (request.token.length < 20 || !/^[a-zA-Z0-9_-]+$/.test(request.token)) {
+    // if (request.token.length < 20 || !/^[a-zA-Z0-9_-]+$/.test(request.token)) {
       return 'Invalid token format';
     }
 
@@ -152,15 +146,15 @@ class BackgroundService {
   }
 
   private async callBackendAPI(
-    prUrl: string,
-    bitbucketToken: string,
-    templateContent: string,
+    prUrl: string, 
+    bitbucketToken: string, 
+    templateContent: string, 
     llmConfig: {
       providerId: string;
       modelId: string;
       apiKey: string | null;
       customEndpoint: string | null;
-    },
+    }
   ): Promise<Response> {
     const requestBody: ApiRequestBody = {
       prUrl: prUrl,
@@ -232,26 +226,23 @@ class BackgroundService {
       // Try to get error details from response body
       const errorData = await response.json();
       console.log('Backend error response:', errorData);
-
+      
       // Check if backend provides specific error message
       if (errorData && typeof errorData === 'object') {
         // Handle v2 API error format
         if (errorData.success === false && errorData.error) {
-          return {
-            error:
-              errorData.error.message || errorData.error.details || 'Unknown error from server',
-          };
+          return { error: errorData.error.message || errorData.error.details || 'Unknown error from server' };
         }
-
+        
         // Handle different error response formats (backward compatibility)
         if (errorData.error && typeof errorData.error === 'string') {
           return { error: errorData.error };
         }
-
+        
         if (errorData.message && typeof errorData.message === 'string') {
           return { error: errorData.message };
         }
-
+        
         // If error is an object, try to extract message
         if (errorData.error && typeof errorData.error === 'object') {
           if (errorData.error.message) {

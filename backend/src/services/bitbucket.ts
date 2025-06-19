@@ -181,11 +181,11 @@ export class BitbucketApiClient {
   private logResponseError(error: AxiosError): void {
     if (error.response) {
       console.error(`❌ [Bitbucket API] ${error.response.status} ${error.config?.url}`);
-      console.error('❌ [Bitbucket API] Error response:', error.response.data);
+      console.error(`❌ [Bitbucket API] Error response:`, error.response.data);
     } else if (error.request) {
       console.error(`❌ [Bitbucket API] Network error for ${error.config?.url}:`, error.message);
     } else {
-      console.error('❌ [Bitbucket API] Request setup error:', error.message);
+      console.error(`❌ [Bitbucket API] Request setup error:`, error.message);
     }
   }
 
@@ -230,7 +230,7 @@ export class BitbucketApiClient {
             error,
           );
 
-        default: {
+        default:
           const message = errorData?.error?.message || `HTTP ${statusCode} error occurred`;
           return new BitbucketServiceError(
             BitbucketApiErrorCode.UNKNOWN_ERROR,
@@ -238,7 +238,6 @@ export class BitbucketApiClient {
             statusCode,
             error,
           );
-        }
       }
     } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
       return new BitbucketServiceError(
@@ -308,7 +307,7 @@ export class BitbucketApiClient {
       }
 
       // This shouldn't happen due to interceptors, but handle just in case
-      console.error('❌ [Bitbucket API] Unexpected error fetching diff:', error);
+      console.error(`❌ [Bitbucket API] Unexpected error fetching diff:`, error);
       throw new BitbucketServiceError(
         BitbucketApiErrorCode.UNKNOWN_ERROR,
         `Failed to fetch PR diff: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -350,7 +349,7 @@ export class BitbucketApiClient {
         throw error;
       }
 
-      console.error('❌ [Bitbucket API] Unexpected error fetching PR info:', error);
+      console.error(`❌ [Bitbucket API] Unexpected error fetching PR info:`, error);
       throw new BitbucketServiceError(
         BitbucketApiErrorCode.UNKNOWN_ERROR,
         `Failed to fetch PR info: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -368,7 +367,7 @@ export class BitbucketApiClient {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log('🔍 [Bitbucket API] Testing connection with current token');
+      console.log(`🔍 [Bitbucket API] Testing connection with current token`);
 
       // Use the user endpoint to test authentication
       const response = await this.axiosInstance.get('/user');
@@ -378,7 +377,7 @@ export class BitbucketApiClient {
       );
       return true;
     } catch (error) {
-      console.error('❌ [Bitbucket API] Connection test failed:', error);
+      console.error(`❌ [Bitbucket API] Connection test failed:`, error);
 
       if (error instanceof BitbucketServiceError) {
         throw error;

@@ -55,9 +55,9 @@ export class AnthropicProvider extends BaseLLMProvider {
   constructor(config: AnthropicProviderConfig) {
     const mergedConfig = { ...DEFAULT_CONFIG, ...config };
     super(LLMProviderType.ANTHROPIC, mergedConfig);
-
+    
     this.anthropicConfig = mergedConfig as AnthropicProviderConfig;
-
+    
     // Validate API key
     if (!config.apiKey || config.apiKey.trim() === '') {
       throw new LLMProviderError(
@@ -83,12 +83,10 @@ export class AnthropicProvider extends BaseLLMProvider {
   protected async executeLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
-  ): Promise<
-    Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>
-  > {
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [Anthropic Provider] Starting LLM generation');
+    console.log(`🤖 [Anthropic Provider] Starting LLM generation`);
     console.log(`🔧 [Anthropic Provider] Using model: ${opts.model}`);
 
     // Update client with new model if different
@@ -105,10 +103,10 @@ export class AnthropicProvider extends BaseLLMProvider {
 
     try {
       console.log(`📝 [Anthropic Provider] Generated prompt:\n${prompt}`);
-      console.log('🌐 [Anthropic Provider] Sending request to Anthropic...');
+      console.log(`🌐 [Anthropic Provider] Sending request to Anthropic...`);
 
       const response = await this.client.invoke([new HumanMessage(prompt)]);
-
+      
       const generatedText = response.content as string;
 
       if (!generatedText) {
@@ -122,11 +120,9 @@ export class AnthropicProvider extends BaseLLMProvider {
       // Extract token usage from response metadata if available
       const tokensUsed = response.response_metadata?.usage?.total_tokens || 0;
 
-      console.log('✅ [Anthropic Provider] Description generated successfully');
+      console.log(`✅ [Anthropic Provider] Description generated successfully`);
       console.log(`📊 [Anthropic Provider] Tokens used: ${tokensUsed}`);
-      console.log(
-        `📝 [Anthropic Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`📝 [Anthropic Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -141,7 +137,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         },
       };
     } catch (error) {
-      console.error('❌ [Anthropic Provider] Error generating description:', error);
+      console.error(`❌ [Anthropic Provider] Error generating description:`, error);
       throw this.transformError(error);
     }
   }
@@ -156,7 +152,7 @@ export class AnthropicProvider extends BaseLLMProvider {
   ): Promise<GeneratedDescription> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [Anthropic Provider] Starting PR description generation');
+    console.log(`🤖 [Anthropic Provider] Starting PR description generation`);
     console.log(`🔧 [Anthropic Provider] Using model: ${opts.model}`);
     console.log(`📏 [Anthropic Provider] Original diff size: ${diffContent.length} characters`);
 
@@ -183,25 +179,25 @@ export class AnthropicProvider extends BaseLLMProvider {
 
     // Prepare the prompt using proper template processing
     const template = opts.template || this.getDefaultPromptTemplate();
-
+    
     // Use templateData if provided, otherwise fall back to legacy diff-only processing
     let prompt: string;
     if (opts.templateData) {
-      console.log('📝 [Anthropic Provider] Using templateData for template processing');
+      console.log(`📝 [Anthropic Provider] Using templateData for template processing`);
       // Update DIFF_CONTENT with the processed diff
       const finalTemplateData = { ...opts.templateData, DIFF_CONTENT: processedDiff };
       prompt = this.processTemplate(template, finalTemplateData);
     } else {
-      console.log('📝 [Anthropic Provider] Using legacy diff-only template processing');
+      console.log(`📝 [Anthropic Provider] Using legacy diff-only template processing`);
       // Legacy approach: replace {DIFF_CONTENT} placeholder with diff content
       prompt = template.replace(/{DIFF_CONTENT}/g, processedDiff);
     }
 
     try {
-      console.log('🌐 [Anthropic Provider] Sending request to Anthropic...');
+      console.log(`🌐 [Anthropic Provider] Sending request to Anthropic...`);
 
       const response = await this.client.invoke([new HumanMessage(prompt)]);
-
+      
       const generatedText = response.content as string;
 
       if (!generatedText) {
@@ -215,11 +211,9 @@ export class AnthropicProvider extends BaseLLMProvider {
       // Extract token usage from response metadata
       const tokensUsed = response.response_metadata?.usage?.total_tokens || 0;
 
-      console.log('✅ [Anthropic Provider] Description generated successfully');
+      console.log(`✅ [Anthropic Provider] Description generated successfully`);
       console.log(`📊 [Anthropic Provider] Tokens used: ${tokensUsed}`);
-      console.log(
-        `📝 [Anthropic Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`📝 [Anthropic Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -234,7 +228,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         },
       };
     } catch (error: any) {
-      console.error('❌ [Anthropic Provider] Generation failed:', error);
+      console.error(`❌ [Anthropic Provider] Generation failed:`, error);
       throw this.transformError(error);
     }
   }
@@ -244,7 +238,7 @@ export class AnthropicProvider extends BaseLLMProvider {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log('🔍 [Anthropic Provider] Testing connection...');
+      console.log(`🔍 [Anthropic Provider] Testing connection...`);
 
       const testClient = new ChatAnthropic({
         anthropicApiKey: this.anthropicConfig.apiKey,
@@ -254,10 +248,10 @@ export class AnthropicProvider extends BaseLLMProvider {
 
       await testClient.invoke([new HumanMessage('Test connection')]);
 
-      console.log('✅ [Anthropic Provider] Connection test successful');
+      console.log(`✅ [Anthropic Provider] Connection test successful`);
       return true;
     } catch (error: any) {
-      console.error('❌ [Anthropic Provider] Connection test failed:', error);
+      console.error(`❌ [Anthropic Provider] Connection test failed:`, error);
       throw this.transformError(error);
     }
   }

@@ -168,14 +168,7 @@ export interface ApiErrorResponse {
     code: string;
     message: string;
     details?: string | undefined;
-    category:
-      | 'validation'
-      | 'authentication'
-      | 'authorization'
-      | 'rate_limit'
-      | 'provider'
-      | 'processing'
-      | 'internal';
+    category: 'validation' | 'authentication' | 'authorization' | 'rate_limit' | 'provider' | 'processing' | 'internal';
     retryable: boolean;
     suggestedAction?: string | undefined;
   };

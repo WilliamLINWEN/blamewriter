@@ -54,9 +54,9 @@ export class OpenAIProvider extends BaseLLMProvider {
   constructor(config: OpenAIProviderConfig) {
     const mergedConfig = { ...DEFAULT_CONFIG, ...config };
     super(LLMProviderType.OPENAI, mergedConfig);
-
+    
     this.openaiConfig = mergedConfig as OpenAIProviderConfig;
-
+    
     // Validate API key
     if (!config.apiKey || config.apiKey.trim() === '') {
       throw new LLMProviderError(
@@ -87,7 +87,7 @@ export class OpenAIProvider extends BaseLLMProvider {
   ): Promise<GeneratedDescription> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [OpenAI Provider] Starting PR description generation');
+    console.log(`🤖 [OpenAI Provider] Starting PR description generation`);
     console.log(`🔧 [OpenAI Provider] Using model: ${opts.model}`);
     console.log(`📏 [OpenAI Provider] Original diff size: ${diffContent.length} characters`);
 
@@ -115,16 +115,16 @@ export class OpenAIProvider extends BaseLLMProvider {
 
     // Prepare the prompt using proper template processing
     const template = opts.template || this.getDefaultPromptTemplate();
-
+    
     // Use templateData if provided, otherwise fall back to legacy diff-only processing
     let prompt: string;
     if (opts.templateData) {
-      console.log('📝 [OpenAI Provider] Using templateData for template processing');
+      console.log(`📝 [OpenAI Provider] Using templateData for template processing`);
       // Update DIFF_CONTENT with the processed diff
       const finalTemplateData = { ...opts.templateData, DIFF_CONTENT: processedDiff };
       prompt = this.processTemplate(template, finalTemplateData);
     } else {
-      console.log('📝 [OpenAI Provider] Using legacy diff-only template processing');
+      console.log(`📝 [OpenAI Provider] Using legacy diff-only template processing`);
       // Legacy approach: replace {DIFF_CONTENT} placeholder with diff content
       prompt = template.replace(/{DIFF_CONTENT}/g, processedDiff);
     }
@@ -132,10 +132,10 @@ export class OpenAIProvider extends BaseLLMProvider {
     try {
       // Log the prompt for debugging
       console.log(`📝 [OpenAI Provider] Generated prompt:\n${prompt}`);
-      console.log('🌐 [OpenAI Provider] Sending request to OpenAI...');
+      console.log(`🌐 [OpenAI Provider] Sending request to OpenAI...`);
 
       const response = await this.client.invoke([new HumanMessage(prompt)]);
-
+      
       const generatedText = response.content as string;
 
       if (!generatedText) {
@@ -149,11 +149,9 @@ export class OpenAIProvider extends BaseLLMProvider {
       // Extract token usage from response metadata
       const tokensUsed = response.response_metadata?.tokenUsage?.totalTokens || 0;
 
-      console.log('✅ [OpenAI Provider] Description generated successfully');
+      console.log(`✅ [OpenAI Provider] Description generated successfully`);
       console.log(`📊 [OpenAI Provider] Tokens used: ${tokensUsed}`);
-      console.log(
-        `📝 [OpenAI Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`📝 [OpenAI Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -168,7 +166,7 @@ export class OpenAIProvider extends BaseLLMProvider {
         },
       };
     } catch (error: any) {
-      console.error('❌ [OpenAI Provider] Generation failed:', error);
+      console.error(`❌ [OpenAI Provider] Generation failed:`, error);
       throw this.transformError(error);
     }
   }
@@ -179,12 +177,10 @@ export class OpenAIProvider extends BaseLLMProvider {
   protected async executeLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
-  ): Promise<
-    Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>
-  > {
+  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
     const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
 
-    console.log('🤖 [OpenAI Provider] Starting LLM generation');
+    console.log(`🤖 [OpenAI Provider] Starting LLM generation`);
     console.log(`🔧 [OpenAI Provider] Using model: ${opts.model}`);
 
     // Update client with new model if different
@@ -202,10 +198,10 @@ export class OpenAIProvider extends BaseLLMProvider {
     try {
       // Log the prompt for debugging
       console.log(`📝 [OpenAI Provider] Generated prompt:\n${prompt}`);
-      console.log('🌐 [OpenAI Provider] Sending request to OpenAI...');
+      console.log(`🌐 [OpenAI Provider] Sending request to OpenAI...`);
 
       const response = await this.client.invoke([new HumanMessage(prompt)]);
-
+      
       const generatedText = response.content as string;
 
       if (!generatedText) {
@@ -219,11 +215,9 @@ export class OpenAIProvider extends BaseLLMProvider {
       // Extract token usage from response metadata
       const tokensUsed = response.response_metadata?.tokenUsage?.totalTokens || 0;
 
-      console.log('✅ [OpenAI Provider] Description generated successfully');
+      console.log(`✅ [OpenAI Provider] Description generated successfully`);
       console.log(`📊 [OpenAI Provider] Tokens used: ${tokensUsed}`);
-      console.log(
-        `📝 [OpenAI Provider] Generated description length: ${generatedText.length} characters`,
-      );
+      console.log(`📝 [OpenAI Provider] Generated description length: ${generatedText.length} characters`);
 
       return {
         description: generatedText,
@@ -238,7 +232,7 @@ export class OpenAIProvider extends BaseLLMProvider {
         },
       };
     } catch (error) {
-      console.error('❌ [OpenAI Provider] Error generating description:', error);
+      console.error(`❌ [OpenAI Provider] Error generating description:`, error);
       throw this.transformError(error);
     }
   }
@@ -248,7 +242,7 @@ export class OpenAIProvider extends BaseLLMProvider {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log('🔍 [OpenAI Provider] Testing connection...');
+      console.log(`🔍 [OpenAI Provider] Testing connection...`);
 
       const testClient = new ChatOpenAI({
         openAIApiKey: this.openaiConfig.apiKey,
@@ -258,10 +252,10 @@ export class OpenAIProvider extends BaseLLMProvider {
 
       await testClient.invoke([new HumanMessage('Test connection')]);
 
-      console.log('✅ [OpenAI Provider] Connection test successful');
+      console.log(`✅ [OpenAI Provider] Connection test successful`);
       return true;
     } catch (error: any) {
-      console.error('❌ [OpenAI Provider] Connection test failed:', error);
+      console.error(`❌ [OpenAI Provider] Connection test failed:`, error);
       throw this.transformError(error);
     }
   }
@@ -283,7 +277,7 @@ export class OpenAIProvider extends BaseLLMProvider {
       supportsStreaming: true,
       costPerToken: {
         input: 0.0015 / 1000, // $0.0015 per 1K tokens for gpt-3.5-turbo input
-        output: 0.002 / 1000, // $0.002 per 1K tokens for gpt-3.5-turbo output
+        output: 0.002 / 1000,  // $0.002 per 1K tokens for gpt-3.5-turbo output
       },
       rateLimit: {
         requestsPerMinute: 3500,

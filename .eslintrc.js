@@ -1,53 +1,40 @@
 module.exports = {
   root: true,
-  extends: ['eslint:recommended', 'prettier'],
-  plugins: ['prettier'],
   env: {
     node: true,
-    browser: true,
     es2020: true,
+    browser: true,
   },
+  extends: ['eslint:recommended', 'prettier'],
+  plugins: ['prettier'],
   parserOptions: {
     ecmaVersion: 2020,
     sourceType: 'module',
   },
   rules: {
+    // Prettier integration
     'prettier/prettier': 'error',
+
+    // General ESLint rules
     'no-console': 'warn',
     'no-debugger': 'error',
+    'no-duplicate-imports': 'error',
+    'no-unused-expressions': 'error',
     'prefer-const': 'error',
     'no-var': 'error',
+
+    // Code style
+    eqeqeq: ['error', 'always'],
     curly: ['error', 'all'],
+    'brace-style': ['error', '1tbs'],
+    'comma-dangle': ['error', 'always-multiline'],
     quotes: ['error', 'single', { avoidEscape: true }],
     semi: ['error', 'always'],
   },
   overrides: [
     {
-      files: ['**/*.ts', '**/*.tsx'],
-      parser: '@typescript-eslint/parser',
-      plugins: ['@typescript-eslint', 'prettier'],
-      extends: ['eslint:recommended', 'prettier'],
-      parserOptions: {
-        ecmaVersion: 2020,
-        sourceType: 'module',
-      },
-      rules: {
-        'prettier/prettier': 'error',
-        '@typescript-eslint/no-unused-vars': 'error',
-        '@typescript-eslint/no-explicit-any': 'warn',
-        'no-unused-vars': 'off',
-        'no-undef': 'off',
-        'no-console': 'warn',
-        'no-debugger': 'error',
-        'prefer-const': 'error',
-        'no-var': 'error',
-        curly: ['error', 'all'],
-        quotes: ['error', 'single', { avoidEscape: true }],
-        semi: ['error', 'always'],
-      },
-    },
-    {
-      files: ['frontend/**/*.ts', 'frontend/**/*.js'],
+      // Frontend-specific rules
+      files: ['frontend/**/*.js'],
       env: {
         browser: true,
         webextensions: true,
@@ -57,7 +44,18 @@ module.exports = {
       },
     },
     {
-      files: ['backend/**/*.ts', 'backend/**/*.js'],
+      // Backend-specific rules
+      files: ['backend/**/*.js'],
+      env: {
+        node: true,
+      },
+      rules: {
+        'no-console': 'off', // Allow console in backend
+      },
+    },
+    {
+      // Configuration files
+      files: ['*.config.js', '.eslintrc.js'],
       env: {
         node: true,
       },
