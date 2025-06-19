@@ -100,6 +100,16 @@ class PopupController {
     this.llmModelSelect = document.getElementById('popup-llm-model-select') as HTMLSelectElement;
     this.authStatus = document.getElementById('auth-status') as HTMLElement;
 
+    console.log('🔍 Element initialization check:', {
+      generateButton: !!this.generateButton,
+      loadingSpinner: !!this.loadingSpinner,
+      buttonText: !!this.buttonText,
+      templateSelect: !!this.templateSelect,
+      llmProviderSelect: !!this.llmProviderSelect,
+      llmModelSelect: !!this.llmModelSelect,
+      authStatus: !!this.authStatus
+    });
+
     if (!this.generateButton || !this.resultTextarea ||
         !this.statusMessage || !this.optionsButton || !this.templateSelect ||
         !this.llmProviderSelect || !this.llmModelSelect || !this.authStatus) {
@@ -326,10 +336,18 @@ class PopupController {
   private updateGenerateButtonState(): void {
     if (!this.generateButton) return;
 
+    console.log('🔄 updateGenerateButtonState called');
+    console.log('🔍 Auth state:', {
+      isAuthenticated: this.isAuthenticated,
+      isCheckingAuth: this.isCheckingAuth,
+      userInfo: this.userInfo
+    });
+
     // Check authentication
     if (!this.isAuthenticated) {
       this.generateButton.disabled = true;
       this.generateButton.title = 'Please authenticate with Bitbucket first';
+      console.log('❌ Button disabled: Not authenticated');
       return;
     }
 
@@ -337,6 +355,7 @@ class PopupController {
     if (!this.isValidBitbucketPRPage()) {
       this.generateButton.disabled = true;
       this.generateButton.title = 'Please navigate to a Bitbucket Pull Request page';
+      console.log('❌ Button disabled: Invalid PR page');
       return;
     }
 
@@ -345,6 +364,7 @@ class PopupController {
     if (!selectedTemplate) {
       this.generateButton.disabled = true;
       this.generateButton.title = 'Please select a template';
+      console.log('❌ Button disabled: No template selected');
       return;
     }
 
@@ -356,12 +376,14 @@ class PopupController {
     if (!hasValidLLMConfig) {
       this.generateButton.disabled = true;
       this.generateButton.title = 'Please select an LLM provider and model';
+      console.log('❌ Button disabled: Invalid LLM config');
       return;
     }
 
     // All checks passed
     this.generateButton.disabled = false;
     this.generateButton.title = 'Generate PR description using AI';
+    console.log('✅ Button enabled: All checks passed');
   }
 
   private isValidBitbucketPRPage(): boolean {
@@ -402,6 +424,7 @@ class PopupController {
       const validation = this.validateGenerateRequest();
       if (!validation.isValid) {
         this.showError(validation.error!);
+        this.setLoadingState(false);
         return;
       }
 
@@ -410,6 +433,7 @@ class PopupController {
         await this.authenticateUser();
         if (!this.isAuthenticated) {
           this.showError('Authentication required to generate PR descriptions');
+          this.setLoadingState(false);
           return;
         }
       }
@@ -418,22 +442,26 @@ class PopupController {
       const currentUrl = await this.getCurrentTabUrl();
       if (!currentUrl) {
         this.showError('Could not get current page URL.');
+        this.setLoadingState(false);
         return;
       }
 
       if (!this.isValidBitbucketPRUrl(currentUrl)) {
         this.showError('Please navigate to a Bitbucket PR page to use this feature.');
+        this.setLoadingState(false);
         return;
       }
 
       const selectedTemplate = this.availableTemplates.find(t => t.id === this.templateSelect.value);
       if (!selectedTemplate) {
         this.showError('Selected template not found.');
+        this.setLoadingState(false);
         return;
       }
 
       if (!this.currentUserLLMConfig) {
         this.showError('LLM configuration not found.');
+        this.setLoadingState(false);
         return;
       }
 
@@ -506,6 +534,16 @@ class PopupController {
 
         if (this.currentUserLLMConfig && this.currentUserLLMConfig.providerId) {
             this.llmProviderSelect.value = this.currentUserLLMConfig.providerId;
+        } else if (this.availableLLMProviders.length > 0 && this.availableLLMProviders[0]) {
+            // Auto-select the first provider for better UX
+            const firstProvider = this.availableLLMProviders[0];
+            this.llmProviderSelect.value = firstProvider.id;
+            this.currentUserLLMConfig = { 
+                providerId: firstProvider.id, 
+                selectedModelId: null, 
+                customEndpoint: null 
+            };
+            console.log('✅ Auto-selected first LLM provider:', firstProvider.name);
         }
         this.llmProviderSelect.disabled = false;
         this.renderLLMModelSelection();
@@ -544,6 +582,14 @@ class PopupController {
             if(provider.models.some(m => m.id === this.currentUserLLMConfig!.selectedModelId)) {
                 this.llmModelSelect.value = this.currentUserLLMConfig.selectedModelId;
             }
+        } else if (provider.models.length > 0 && provider.models[0]) {
+            // Auto-select the first model for better UX
+            const firstModel = provider.models[0];
+            this.llmModelSelect.value = firstModel.id;
+            if (this.currentUserLLMConfig) {
+                this.currentUserLLMConfig.selectedModelId = firstModel.id;
+            }
+            console.log('✅ Auto-selected first model:', firstModel.name);
         }
         this.llmModelSelect.disabled = false;
     } else {
@@ -581,6 +627,12 @@ class PopupController {
         option.textContent = template.name;
         this.templateSelect.appendChild(option);
       });
+
+      // Auto-select the first template for better UX
+      if (this.availableTemplates.length > 0 && this.availableTemplates[0]) {
+        this.templateSelect.value = this.availableTemplates[0].id;
+        console.log('✅ Auto-selected first template:', this.availableTemplates[0].name);
+      }
 
       this.templateSelect.disabled = false;
       this.updateGenerateButtonState();
@@ -716,16 +768,27 @@ class PopupController {
   }
 
   private setLoadingState(loading: boolean): void {
+    console.log('🔄 setLoadingState called with loading:', loading);
+    console.log('🔍 Elements check:', {
+      generateButton: !!this.generateButton,
+      loadingSpinner: !!this.loadingSpinner,
+      buttonText: !!this.buttonText
+    });
+    
     if (this.generateButton && this.loadingSpinner && this.buttonText) {
       if (loading) {
         this.generateButton.disabled = true;
         this.loadingSpinner.style.display = 'block';
         this.buttonText.textContent = 'Generating...';
+        console.log('✅ Loading state set to true');
       } else {
         this.updateGenerateButtonState(); // This will handle the disabled state properly
         this.loadingSpinner.style.display = 'none';
         this.buttonText.textContent = 'Generate Description';
+        console.log('✅ Loading state set to false');
       }
+    } else {
+      console.error('❌ setLoadingState: Missing required elements');
     }
   }
 

@@ -24,14 +24,17 @@ export interface OAuthTokenStorage {
  * @param userInfo User information from Bitbucket API
  */
 export async function saveOAuthTokens(
-  token: OAuthToken, 
+  token: OAuthToken,
   userInfo?: BitbucketUserInfo
 ): Promise<void> {
-  const tokenData: OAuthTokenStorage = {
-    access_token: token.access_token,
-    ...(token.refresh_token && { refresh_token: token.refresh_token }),
-    ...(token.expires_in && { token_expiry: Date.now() + (token.expires_in * 1000) }),
-    ...(userInfo && { user_info: userInfo })
+  const keys = BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS;
+  let tokenData = {
+    [keys.ACCESS_TOKEN]: token.access_token,
+    ...(token.refresh_token && { [keys.REFRESH_TOKEN]: token.refresh_token }),
+    ...(token.expires_in && {
+      [keys.TOKEN_EXPIRY]: Date.now() + token.expires_in * 1000
+    }),
+    ...(userInfo && { [keys.USER_INFO]: userInfo })
   };
 
   return new Promise((resolve, reject) => {

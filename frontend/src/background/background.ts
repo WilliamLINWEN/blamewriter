@@ -6,6 +6,7 @@ import {
   buildAuthorizationUrl, 
   getBackendBaseUrl,
   BACKEND_OAUTH_CONFIG,
+  OAUTH_CONFIG,
   OAuthError,
   OAuthErrorType
 } from '../common/oauth_config';
@@ -479,34 +480,27 @@ class BackgroundService {
    */
   private async initiateOAuthFlow(): Promise<{ success: boolean; userInfo?: any; error?: string }> {
     try {
-      // Generate state parameter for CSRF protection
-      const state = generateOAuthState();
-      await saveOAuthState(state);
-
-      // Get OAuth configuration from backend
-      const oauthConfig = await this.getOAuthConfigFromBackend();
-      if (!oauthConfig.success || !oauthConfig.clientId || !oauthConfig.redirectUri) {
-        throw new Error(oauthConfig.error || 'Failed to get OAuth configuration');
+      // Get OAuth authorization URL from backend
+      const oauthResult = await this.getOAuthAuthUrlFromBackend();
+      if (!oauthResult.success || !oauthResult.authUrl || !oauthResult.state) {
+        throw new Error(oauthResult.error || 'Failed to get OAuth authorization URL');
       }
 
-      // Build authorization URL
-      const authUrl = buildAuthorizationUrl(
-        oauthConfig.clientId,
-        oauthConfig.redirectUri,
-        state
-      );
-
+      // Save the state for later validation
+      await saveOAuthState(oauthResult.state);
+      console.info("oauthResult.authUrl: ", oauthResult.authUrl);
       console.log('🌐 Launching OAuth web auth flow...');
 
       // Launch OAuth flow
       return new Promise((resolve) => {
         chrome.identity.launchWebAuthFlow(
           {
-            url: authUrl,
+            url: oauthResult.authUrl!,
             interactive: true
           },
           async (responseUrl) => {
             try {
+              console.info('🔗 OAuth response URL:', responseUrl);
               if (chrome.runtime.lastError) {
                 console.error('OAuth flow error:', chrome.runtime.lastError);
                 resolve({
@@ -549,20 +543,41 @@ class BackgroundService {
   }
 
   /**
-   * Get OAuth configuration from backend
+   * Get OAuth authorization URL from backend
    */
-  private async getOAuthConfigFromBackend(): Promise<{
+  private async getOAuthAuthUrlFromBackend(): Promise<{
     success: boolean;
-    clientId?: string;
-    redirectUri?: string;
+    authUrl?: string;
+    state?: string;
     error?: string;
   }> {
     try {
       const backendUrl = getBackendBaseUrl();
       const configUrl = `${backendUrl}${BACKEND_OAUTH_CONFIG.ENDPOINTS.OAUTH_INIT}`;
       
-      console.log('📡 Getting OAuth config from backend:', configUrl);
+      console.log('📡 Getting OAuth auth URL from backend:', configUrl);
+      console.log('🔧 Backend base URL:', backendUrl);
+      console.log('🔧 OAuth init endpoint:', BACKEND_OAUTH_CONFIG.ENDPOINTS.OAUTH_INIT);
 
+      // First test basic connectivity
+      console.log('🧪 Testing basic connectivity...');
+      try {
+        const healthResponse = await fetch(`${backendUrl}/health`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log('🧪 Health check response status:', healthResponse.status);
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json();
+          console.log('🧪 Health check data:', healthData);
+        }
+      } catch (healthError) {
+        console.error('🧪 Health check failed:', healthError);
+      }
+
+      console.log('📡 Making OAuth config request...');
       const response = await fetch(configUrl, {
         method: 'GET',
         headers: {
@@ -570,19 +585,31 @@ class BackgroundService {
         }
       });
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers);
+
       if (!response.ok) {
         throw new Error(`Backend config request failed: ${response.status} ${response.statusText}`);
       }
 
       const config = await response.json();
+      console.log('📡 Backend response:', config);
       
+      if (!config.success || !config.authUrl || !config.state) {
+        throw new Error('Invalid response from backend OAuth init endpoint');
+      }
       return {
         success: true,
-        clientId: config.clientId,
-        redirectUri: config.redirectUri
+        authUrl: config.authUrl,
+        state: config.state
       };
     } catch (error) {
-      console.error('Error getting OAuth config from backend:', error);
+      console.error('❌ Error getting OAuth config from backend:', error);
+      console.error('❌ Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       return {
         success: false,
         error: `Failed to get OAuth configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -635,7 +662,7 @@ class BackgroundService {
       }
 
       // Exchange code for tokens via backend
-      const tokenResult = await this.exchangeCodeForTokens(code);
+      const tokenResult = await this.exchangeCodeForTokens(code, state);
       
       return tokenResult;
     } catch (error) {
@@ -650,23 +677,31 @@ class BackgroundService {
   /**
    * Exchange authorization code for access tokens via backend
    */
-  private async exchangeCodeForTokens(code: string): Promise<{
+  private async exchangeCodeForTokens(code: string, state: string): Promise<{
     success: boolean;
     userInfo?: any;
     error?: string;
   }> {
     try {
       const backendUrl = getBackendBaseUrl();
+      // const callbackUrl = OAUTH_CONFIG.REDIRECT_URL;
       const callbackUrl = `${backendUrl}${BACKEND_OAUTH_CONFIG.ENDPOINTS.OAUTH_CALLBACK}`;
-      
+
       console.log('🔑 Exchanging code for tokens...');
 
-      const response = await fetch(callbackUrl, {
-        method: 'POST',
+      // const response = await fetch(callbackUrl, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify({ code, state })
+      // });
+      const params = new URLSearchParams({ code, state }).toString();
+      const response = await fetch(`${callbackUrl}?${params}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ code })
+        }
       });
 
       if (!response.ok) {

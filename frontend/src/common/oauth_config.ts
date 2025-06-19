@@ -4,14 +4,16 @@
  * OAuth 2.0 configuration constants for Bitbucket integration
  */
 
-export interface OAuthConfig {
-  readonly clientId: string;
-  readonly scopes: string[];
-  readonly redirectUri: string;
-  readonly authorizationUrl: string;
-  readonly tokenUrl: string;
-  readonly apiUrl: string;
-}
+export const OAUTH_CONFIG = {
+  CLIENT_ID: 'qb2UuSVYVgHrsfPkDb',
+  CLIENT_SECRET: 'wCaPGqAaswYe6Z3QXfMsFJb632n67nQr',
+  AUTH_URL: 'https://bitbucket.org/site/oauth2/authorize',
+  TOKEN_URL: 'https://bitbucket.org/site/oauth2/access_token',
+  REDIRECT_URL: `https://${chrome.runtime.id}.chromiumapp.org/callback`,
+  SCOPES: ['pullrequest', 'repository', 'account'],
+  TOKEN_STORAGE_KEY: 'bitbucket_auth'
+};
+
 
 /**
  * Bitbucket OAuth 2.0 endpoints and configuration
@@ -63,13 +65,15 @@ export const BACKEND_OAUTH_CONFIG = {
  * Get the appropriate backend base URL based on environment
  */
 export function getBackendBaseUrl(): string {
-  // In development, use localhost
-  if (process.env.NODE_ENV === 'development') {
-    return BACKEND_OAUTH_CONFIG.DEV_BASE_URL;
-  }
+  // For now, always use development URL since we're in development
+  // In the future, this can be configured per environment
+  return BACKEND_OAUTH_CONFIG.DEV_BASE_URL;
   
-  // In production, use production URL
-  return BACKEND_OAUTH_CONFIG.PROD_BASE_URL;
+  // TODO: Implement proper environment detection for production deployment
+  // if (process.env.NODE_ENV === 'development') {
+  //   return BACKEND_OAUTH_CONFIG.DEV_BASE_URL;
+  // }
+  // return BACKEND_OAUTH_CONFIG.PROD_BASE_URL;
 }
 
 /**

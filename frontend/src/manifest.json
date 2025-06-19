@@ -6,8 +6,11 @@
   "permissions": ["activeTab", "storage", "identity"],
   "host_permissions": [
     "http://localhost:3001/*",
+    "http://127.0.0.1:3001/*",
     "https://api.blamewriter.com/*",
-    "https://*.blamewriter.com/*"
+    "https://*.blamewriter.com/*",
+    "https://*.chromiumapp.org/*",
+    "https://bitbucket.org/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -31,5 +34,6 @@
   "options_ui": {
     "page": "options/options.html",
     "open_in_tab": true
-  }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3t7uMpMMdn7M/ZwpKWFJPRqS/trtk88lqtInutgbdi12YvbqepNxvG2/7BT18hSs4EWXGCSwT4r3tXIoI9NWeyB4o+9dW6Zb+QZTMjrca/N7L+OM8UnKT7S15mme0ZzM+bZogvTd0aG4CP1MKfWWJ9MhVmyOTZ2YfnDTbYHTiEoOLXvmLlSQT0wCtxCBeUEt07yHE4MUgA0PsnEHSof+0yxoHbZx00byPseLCH5n5XWwlMBg73BNiY79hjjUZd1EYfq6m3MDeU3r4EFUWylIbV2mPSlHHPM4NosI1eYWtqq9xcmRhWVZ8WEVToHKOc9LGyZ+b+P/9UoxrTYUE6rTJwIDAQAB"
 }

@@ -10,6 +10,9 @@ interface EnvironmentConfig {
   NODE_ENV: string;
   BITBUCKET_APP_SECRET: string;
   OPENAI_API_KEY: string;
+  BITBUCKET_OAUTH_CLIENT_ID: string;
+  BITBUCKET_OAUTH_CLIENT_SECRET: string;
+  BITBUCKET_OAUTH_REDIRECT_URI: string;
 }
 
 interface ValidationResult {
@@ -24,8 +27,11 @@ interface ValidationResult {
 const REQUIRED_ENV_VARS = {
   PORT: 'Server port configuration',
   NODE_ENV: 'Environment mode (development/production)',
-  BITBUCKET_APP_SECRET: 'Bitbucket API authentication secret',
+  // BITBUCKET_APP_SECRET: 'Bitbucket API authentication secret',
   OPENAI_API_KEY: 'OpenAI API access key',
+  BITBUCKET_OAUTH_CLIENT_ID: 'Bitbucket OAuth application client ID',
+  BITBUCKET_OAUTH_CLIENT_SECRET: 'Bitbucket OAuth application client secret',
+  BITBUCKET_OAUTH_REDIRECT_URI: 'OAuth callback redirect URI',
 } as const;
 
 /**
@@ -66,6 +72,19 @@ export function validateEnvironmentVariables(): ValidationResult {
 
   if (config.OPENAI_API_KEY && !isValidOpenAIKey(config.OPENAI_API_KEY)) {
     errors.push(`❌ OPENAI_API_KEY appears to be invalid format (should start with 'sk-')`);
+  }
+
+  // OAuth configuration validation
+  if (config.BITBUCKET_OAUTH_REDIRECT_URI && !isValidUrl(config.BITBUCKET_OAUTH_REDIRECT_URI)) {
+    errors.push(`❌ BITBUCKET_OAUTH_REDIRECT_URI must be a valid HTTP/HTTPS URL`);
+  }
+
+  if (config.BITBUCKET_OAUTH_CLIENT_ID && config.BITBUCKET_OAUTH_CLIENT_ID.length < 10) {
+    errors.push(`❌ BITBUCKET_OAUTH_CLIENT_ID appears to be too short`);
+  }
+
+  if (config.BITBUCKET_OAUTH_CLIENT_SECRET && config.BITBUCKET_OAUTH_CLIENT_SECRET.length < 20) {
+    errors.push(`❌ BITBUCKET_OAUTH_CLIENT_SECRET appears to be too short`);
   }
 
   return {
@@ -110,6 +129,18 @@ function isValidNodeEnv(env: string): boolean {
  */
 function isValidOpenAIKey(key: string): boolean {
   return key.startsWith('sk-') && key.length > 10;
+}
+
+/**
+ * Validates that a URL has proper format
+ */
+function isValidUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    return ['http:', 'https:'].includes(urlObj.protocol);
+  } catch {
+    return false;
+  }
 }
 
 /**

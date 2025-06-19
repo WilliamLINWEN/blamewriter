@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { validateEnvironmentOrExit } from './utils/env-validation';
 import generateRouter from './routes/generate-v2';
 import multiLLMRouter from './routes/generate-v2-multi-llm';
+import authRouter from './routes/auth';
 import { requestLoggingMiddleware, auditMiddleware } from './middleware/logging';
 
 // Load environment variables
@@ -48,6 +49,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/v1', generateRouter);
 app.use('/api/v2', multiLLMRouter); // Enhanced multi-LLM provider route
+app.use('/api/auth', authRouter); // OAuth authentication routes
 
 // Basic error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
