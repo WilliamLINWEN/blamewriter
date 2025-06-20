@@ -66,6 +66,10 @@ module.exports = (env, argv) => {
               ignore: ['**/*.ts'],
             },
           },
+          {
+            from: 'src/content/content.css',
+            to: 'content.css',
+          },
         ],
       }),
     ],

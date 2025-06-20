@@ -21,8 +21,9 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://bitbucket.org/*/pullrequests/*"],
-      "js": ["content.js"]
+      "matches": ["https://bitbucket.org/*/pull-requests/*"],
+      "js": ["content.js"],
+      "css": ["content.css"]
     }
   ],
   "icons": {

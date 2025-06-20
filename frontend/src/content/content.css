@@ -1,0 +1,58 @@
+/* Styles for Bitbucket PR Helper extension */
+:root {
+    --ds-background-accent-purple-subtle: #9F8FEF;
+    --ds-text-inverse: #FFFFFF;
+    --ds-background-accent-purple-subtle-hovered: #B8ACF6;
+    --ds-background-accent-purple-subtle-pressed: #DFD8FD;
+    --ds-text: #172B4D;
+}
+/* Styles for Bitbucket PR Helper extension */
+.bpr-ai-button {
+    /* 基礎樣式 - 模仿 Bitbucket 按鈕 */
+    align-items: center;
+    border-width: 0px;
+    border-radius: 3px;
+    box-sizing: border-box;
+    display: inline-flex;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    justify-content: center;
+    line-height: 1.42857;
+    max-width: 100%;
+    padding: 4px 10px;
+    text-align: center;
+    text-decoration: none;
+    transition: background 0.1s ease-out 0s, box-shadow 0.15s cubic-bezier(0.47, 0.03, 0.49, 1.38) 0s;
+    cursor: pointer;
+    height: 32px;
+    vertical-align: middle;
+    white-space: nowrap;
+
+    /* 顏色 - 使用一個醒目的紫色主題 */
+    /* 我們使用 Bitbucket 的設計系統變數，以確保主題切換時顏色也能適應 */
+    background: var(--ds-background-accent-purple-subtle, #9F8FEF);
+    color: var(--ds-text-inverse, #FFFFFF);
+
+    /* 按鈕間距 */
+    margin-left: 8px;
+}
+
+.bpr-ai-button:hover {
+    background: var(--ds-background-accent-purple-subtle-hovered, #B8ACF6);
+}
+
+.bpr-ai-button:active {
+    background: var(--ds-background-accent-purple-subtle-pressed, #DFD8FD);
+    color: var(--ds-text, #172B4D); /* 按下時文字顏色變深以提供反饋 */
+}
+
+/* 用於區分圖標和文字，並設定間距 */
+.bpr-ai-button .icon {
+    margin-right: 6px;
+    /* 讓 emoji 圖標看起來更像一個圖示 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
