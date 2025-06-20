@@ -38,15 +38,11 @@
         </div>
         
         <div class="form-section">
-            <div class="input-group">
-                <label for="bitbucket-token">Bitbucket OAuth Token:</label>
-                <input 
-                    type="password" 
-                    id="bitbucket-token" 
-                    placeholder="Paste your Bitbucket OAuth token here..."
-                    class="token-input"
-                >
-                <small class="input-hint">Required for accessing your PR data</small>
+            <div class="auth-status" id="auth-status">
+                <div class="auth-checking">
+                    <div class="loading-spinner"></div>
+                    <span>Checking authentication...</span>
+                </div>
             </div>
             
             <button id="generate-btn" class="generate-button" disabled>

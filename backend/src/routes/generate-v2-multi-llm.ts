@@ -18,19 +18,17 @@ import {
   LLMProviderType,
   LLMProviderError,
   formatLLMProviderError,
-} from '../services/llm-provider';
-import {
   getProviderFactory,
   AnyProviderConfig,
-} from '../services/providers/provider-factory';
+} from '../services';
+
 import {
   GenerateRequest,
   GenerateResponse,
   ApiErrorResponse,
-  GenerateApiResponse,
   ApiMetadata,
   DiffStats,
-} from '../types/api';
+} from '@/types/api';
 
 /**
  * Router for the enhanced generate endpoint
@@ -218,7 +216,7 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
   const requestId = uuidv4();
 
   console.log(`🚀 [Generate V2] Request started: ${requestId}`);
-  console.log(`📝 [Generate V2] Request body:`, JSON.stringify(req.body, null, 2));
+  console.log('📝 [Generate V2] Request body:', JSON.stringify(req.body, null, 2));
 
   try {
     // Validate request
@@ -242,7 +240,7 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
         },
       };
 
-      console.log(`❌ [Generate V2] Validation failed:`, validation.errors);
+      console.log('❌ [Generate V2] Validation failed:', validation.errors);
       res.status(400).json(errorResponse);
       return;
     }
@@ -256,13 +254,11 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
 
     const bitbucketClient = createBitbucketClient(request.bitbucketToken);
 
-    let prData;
-
     console.log('🔍 [Generate V2] Fetching PR data from Bitbucket...');
     const prInfo = await bitbucketClient.fetchPRInfo(urlInfo);
-    console.log(`🌐 [Generate V2] Fetching PR diff from Bitbucket...`);
+    console.log('🌐 [Generate V2] Fetching PR diff from Bitbucket...');
     const prDiff = await bitbucketClient.fetchPRDiff(urlInfo);
-    prData = { ...prInfo, diff: prDiff };
+    const prData = { ...prInfo, diff: prDiff };
     console.log('✅ PR data fetched successfully');
 
     const diffContent: string = prData.diff.diff;
@@ -271,7 +267,7 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
 
     // Calculate diff statistics
     const diffStats = calculateDiffStats(diffContent);
-    console.log(`📈 [Generate V2] Diff stats:`, diffStats);
+    console.log('📈 [Generate V2] Diff stats:', diffStats);
 
     // Create LLM provider
     const { type, config } = mapToProviderConfig(request.llmConfig);
@@ -280,8 +276,10 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
     console.log(`🤖 [Generate V2] Using provider: ${type}`);
 
     // Use provider's built-in template processing instead of manual replacement
-    console.log(`📝 [Generate V2] Using provider template processing with standardized placeholders...`);
-    
+    console.log(
+      '📝 [Generate V2] Using provider template processing with standardized placeholders...',
+    );
+
     // Prepare generation options with template processing
     const generationOptions = {
       model: request.llmConfig.modelId,
@@ -294,7 +292,7 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
         PULL_REQUEST_TITLE: prData.title || 'No title provided',
         PULL_REQUEST_BODY: prData.description || 'No description provided',
         DIFF_CONTENT: diffContent || 'No diff available',
-        
+
         // Legacy placeholders (using {{placeholder}} format for backward compatibility)
         // Note: These are supported but {PLACEHOLDER} format is preferred
         title: prData.title || 'No title provided',
@@ -304,16 +302,22 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
         destination_branch: prData.destination?.branch?.name || 'Unknown',
         diff: diffContent || 'No diff available',
       },
-      ...(request.llmConfig.parameters?.maxTokens && { maxTokens: request.llmConfig.parameters.maxTokens }),
-      ...(request.llmConfig.parameters?.temperature && { temperature: request.llmConfig.parameters.temperature }),
-      ...(request.options?.diffProcessing?.maxChunkSize && { diffSizeLimit: request.options.diffProcessing.maxChunkSize }),
+      ...(request.llmConfig.parameters?.maxTokens && {
+        maxTokens: request.llmConfig.parameters.maxTokens,
+      }),
+      ...(request.llmConfig.parameters?.temperature && {
+        temperature: request.llmConfig.parameters.temperature,
+      }),
+      ...(request.options?.diffProcessing?.maxChunkSize && {
+        diffSizeLimit: request.options.diffProcessing.maxChunkSize,
+      }),
     };
 
     // Generate description using base class template processing
     // Note: Using the improved base class method that handles template validation and processing
     const result = await provider.generatePRDescription(generationOptions);
 
-    console.log(`✅ [Generate V2] Description generated successfully`);
+    console.log('✅ [Generate V2] Description generated successfully');
     console.log(`📝 [Generate V2] Result: ${result.description.length} characters`);
 
     // Build response metadata
@@ -339,8 +343,8 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
             author: prData.author?.display_name,
             source_branch: prData.source?.branch?.name,
             destination_branch: prData.destination?.branch?.name,
-            diff: prData.diff.diff
-          }
+            diff: prData.diff.diff,
+          },
         },
         llmProvider: {
           name: result.provider,
@@ -353,9 +357,8 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
 
     console.log(`🎉 [Generate V2] Request completed successfully: ${requestId}`);
     res.json(response);
-
   } catch (error: any) {
-    console.error(`❌ [Generate V2] Request failed:`, error);
+    console.error('❌ [Generate V2] Request failed:', error);
 
     let errorResponse: ApiErrorResponse;
 

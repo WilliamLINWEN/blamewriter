@@ -1,19 +1,15 @@
 import express from 'express';
-import {
-  parseBitbucketPRUrl,
-  BitbucketUrlError,
-  formatBitbucketUrlError,
-} from '../utils/bitbucket';
+import { parseBitbucketPRUrl, BitbucketUrlError, formatBitbucketUrlError } from '@/utils/bitbucket';
 import {
   createBitbucketClient,
   BitbucketServiceError,
   formatBitbucketServiceError,
-} from '../services/bitbucket';
+} from '@/services/bitbucket';
 import {
   createOpenAIClient,
   OpenAIServiceError,
   formatOpenAIServiceError,
-} from '../services/openai';
+} from '@/services/openai';
 
 /**
  * Request interface for the generate MVP endpoint
@@ -28,6 +24,7 @@ export interface GenerateMVPRequest {
  */
 export interface GenerateMVPResponse {
   description: string;
+  prUrl: string;
 }
 
 /**
@@ -69,7 +66,7 @@ function isValidBitbucketPrUrl(url: string): boolean {
     }
 
     // Check if the path matches PR URL pattern: /workspace/repo/pull-requests/id
-    const pathPattern = /^\/[^\/]+\/[^\/]+\/pull-requests\/\d+/;
+    const pathPattern = /^\/[^/]+\/[^/]+\/pull-requests\/\d+/;
     return pathPattern.test(urlObj.pathname);
   } catch {
     return false;
@@ -160,6 +157,7 @@ function createErrorResponse(
 function createSuccessResponse(description: string, prUrl: string): GenerateMVPResponse {
   return {
     description,
+    prUrl,
   };
 }
 
@@ -202,7 +200,7 @@ async function handleGenerateMVP(req: express.Request, res: express.Response): P
     let prInfo;
     try {
       prInfo = parseBitbucketPRUrl(prUrl);
-      console.log(`🔍 Parsed PR info:`, {
+      console.log('🔍 Parsed PR info:', {
         workspace: prInfo.workspace,
         repo: prInfo.repo,
         prId: prInfo.prId,
@@ -231,7 +229,7 @@ async function handleGenerateMVP(req: express.Request, res: express.Response): P
     // Fetch PR diff from Bitbucket API
     let prDiff;
     try {
-      console.log(`🌐 Fetching PR diff from Bitbucket API...`);
+      console.log('🌐 Fetching PR diff from Bitbucket API...');
       prDiff = await bitbucketClient.fetchPRDiff(prInfo);
       console.log(`✅ PR diff fetched successfully, size: ${prDiff.size} bytes`);
 
@@ -287,7 +285,7 @@ async function handleGenerateMVP(req: express.Request, res: express.Response): P
     // Generate PR description using OpenAI API
     let generatedDescription: string;
     try {
-      console.log(`🤖 Generating PR description with OpenAI...`);
+      console.log('🤖 Generating PR description with OpenAI...');
 
       // Get OpenAI API key from environment
       const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -317,8 +315,8 @@ async function handleGenerateMVP(req: express.Request, res: express.Response): P
 
       generatedDescription = result.description;
 
-      console.log(`✅ OpenAI description generated successfully`);
-      console.log(`📊 Generation stats:`, {
+      console.log('✅ OpenAI description generated successfully');
+      console.log('📊 Generation stats:', {
         model: result.model,
         tokensUsed: result.tokensUsed,
         diffTruncated: result.diffSizeTruncated,

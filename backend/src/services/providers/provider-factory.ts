@@ -5,20 +5,19 @@
 import {
   BaseLLMProvider,
   LLMProviderType,
-  LLMProviderConfig,
   LLMProviderError,
   LLMProviderErrorCode,
 } from '../llm-provider';
 
-import { OpenAIProvider, OpenAIProviderConfig, createOpenAIProvider } from './openai-provider';
-import { AnthropicProvider, AnthropicProviderConfig, createAnthropicProvider } from './anthropic-provider';
-import { XAIProvider, XAIProviderConfig, createXAIProvider } from './xai-provider';
-import { OllamaProvider, OllamaProviderConfig, createOllamaProvider } from './ollama-provider';
+import { OpenAIProviderConfig, createOpenAIProvider } from './openai-provider';
+import { AnthropicProviderConfig, createAnthropicProvider } from './anthropic-provider';
+import { XAIProviderConfig, createXAIProvider } from './xai-provider';
+import { OllamaProviderConfig, createOllamaProvider } from './ollama-provider';
 
 /**
  * Union type for all provider-specific configurations
  */
-export type AnyProviderConfig = 
+export type AnyProviderConfig =
   | OpenAIProviderConfig
   | AnthropicProviderConfig
   | XAIProviderConfig
@@ -44,12 +43,14 @@ export class ProviderRegistry {
    */
   register(key: string, provider: BaseLLMProvider, isDefault = false): void {
     this.providers.set(key, provider);
-    
+
     if (isDefault) {
       this.defaultProvider = provider;
     }
 
-    console.log(`✅ [Provider Registry] Registered ${provider.getProviderType()} provider as '${key}'${isDefault ? ' (default)' : ''}`);
+    console.log(
+      `✅ [Provider Registry] Registered ${provider.getProviderType()} provider as '${key}'${isDefault ? ' (default)' : ''}`,
+    );
   }
 
   /**
@@ -93,12 +94,12 @@ export class ProviderRegistry {
     if (provider && provider === this.defaultProvider) {
       this.defaultProvider = undefined;
     }
-    
+
     const removed = this.providers.delete(key);
     if (removed) {
       console.log(`🗑️  [Provider Registry] Unregistered provider '${key}'`);
     }
-    
+
     return removed;
   }
 
@@ -108,7 +109,7 @@ export class ProviderRegistry {
   clear(): void {
     this.providers.clear();
     this.defaultProvider = undefined;
-    console.log(`🧹 [Provider Registry] Cleared all providers`);
+    console.log('🧹 [Provider Registry] Cleared all providers');
   }
 
   /**
@@ -116,7 +117,7 @@ export class ProviderRegistry {
    */
   async testAll(): Promise<Record<string, boolean>> {
     const results: Record<string, boolean> = {};
-    
+
     for (const [key, provider] of this.providers.entries()) {
       try {
         results[key] = await provider.testConnection();
@@ -125,7 +126,7 @@ export class ProviderRegistry {
         results[key] = false;
       }
     }
-    
+
     return results;
   }
 }
@@ -203,41 +204,45 @@ export class LLMProviderFactory {
   /**
    * Initialize providers from configuration array
    */
-  async initializeProviders(configs: Array<ProviderFactoryConfig & { key: string; isDefault?: boolean }>): Promise<void> {
+  async initializeProviders(
+    configs: Array<ProviderFactoryConfig & { key: string; isDefault?: boolean }>,
+  ): Promise<void> {
     console.log(`🚀 [Provider Factory] Initializing ${configs.length} providers...`);
 
     const initPromises = configs.map(async ({ key, provider, config, isDefault }) => {
       try {
         const providerInstance = this.createAndRegister(key, provider, config, isDefault);
-        
+
         // Optionally test the provider during initialization
         await providerInstance.validateConfig();
-        
+
         console.log(`✅ [Provider Factory] Successfully initialized ${provider} provider '${key}'`);
       } catch (error) {
-        console.error(`❌ [Provider Factory] Failed to initialize ${provider} provider '${key}':`, error);
+        console.error(
+          `❌ [Provider Factory] Failed to initialize ${provider} provider '${key}':`,
+          error,
+        );
         throw error;
       }
     });
 
     await Promise.all(initPromises);
-    console.log(`🎉 [Provider Factory] All providers initialized successfully`);
+    console.log('🎉 [Provider Factory] All providers initialized successfully');
   }
 
   /**
    * Get a provider with fallback logic
    */
-  getProviderWithFallback(
-    preferredKey?: string,
-    fallbackType?: LLMProviderType,
-  ): BaseLLMProvider {
+  getProviderWithFallback(preferredKey?: string, fallbackType?: LLMProviderType): BaseLLMProvider {
     // Try preferred provider first
     if (preferredKey) {
       const preferred = this.registry.get(preferredKey);
       if (preferred) {
         return preferred;
       }
-      console.warn(`⚠️  [Provider Factory] Preferred provider '${preferredKey}' not found, trying fallbacks...`);
+      console.warn(
+        `⚠️  [Provider Factory] Preferred provider '${preferredKey}' not found, trying fallbacks...`,
+      );
     }
 
     // Try fallback by type
@@ -246,7 +251,9 @@ export class LLMProviderFactory {
       if (fallback) {
         return fallback;
       }
-      console.warn(`⚠️  [Provider Factory] Fallback provider type '${fallbackType}' not found, trying default...`);
+      console.warn(
+        `⚠️  [Provider Factory] Fallback provider type '${fallbackType}' not found, trying default...`,
+      );
     }
 
     // Try default provider
@@ -268,14 +275,14 @@ export class LLMProviderFactory {
    */
   discoverCapabilities(): Record<string, any> {
     const capabilities: Record<string, any> = {};
-    
+
     for (const [key, provider] of this.registry['providers'].entries()) {
       capabilities[key] = {
         type: provider.getProviderType(),
         capabilities: provider.getCapabilities(),
       };
     }
-    
+
     return capabilities;
   }
 
@@ -284,19 +291,19 @@ export class LLMProviderFactory {
    */
   async healthCheck(): Promise<Record<string, { healthy: boolean; error?: string }>> {
     const results: Record<string, { healthy: boolean; error?: string }> = {};
-    
+
     for (const [key, provider] of this.registry['providers'].entries()) {
       try {
         await provider.testConnection();
         results[key] = { healthy: true };
       } catch (error: any) {
-        results[key] = { 
-          healthy: false, 
-          error: error.message || 'Unknown error'
+        results[key] = {
+          healthy: false,
+          error: error.message || 'Unknown error',
         };
       }
     }
-    
+
     return results;
   }
 }
