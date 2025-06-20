@@ -31,6 +31,8 @@ export interface ModelDetail {
 export interface LLMProvider {
   id: string;
   name: string;
+  apiKeyLabel?: string;
+  requiresApiKey: boolean;
   models: ModelDetail[];
   requiresCustomEndpoint: boolean;
   customEndpointLabel?: string;
@@ -45,6 +47,7 @@ export interface LLMProvider {
 export interface UserLLMConfig {
   providerId: string | null;
   selectedModelId: string | null;
+  apiKey: string | null;
   customEndpoint: string | null;
 }
 

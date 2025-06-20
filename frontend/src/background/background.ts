@@ -19,6 +19,7 @@ interface GenerateRequest {
   llmConfig: {
     providerId: string;
     modelId: string;
+    apiKey: string | null; // Optional - used for non-OAuth providers
     customEndpoint: string | null;
   };
 }
@@ -37,6 +38,7 @@ interface ApiRequestBody {
   llmConfig: {
     providerId: string;
     modelId: string;
+    apiKey: string | null; // Optional - used for non-OAuth providers
     customEndpoint: string | null;
   };
 }
@@ -200,6 +202,7 @@ class BackgroundService {
     llmConfig: {
       providerId: string;
       modelId: string;
+      apiKey: string | null; // Optional - used for non-OAuth providers
       customEndpoint: string | null;
     },
   ): Promise<Response> {

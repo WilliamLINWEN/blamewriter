@@ -1,21 +1,21 @@
 console.log('Options script loaded.');
 
 import {
+  CURRENT_SCHEMA_VERSION,
+  ExtensionStorage,
+  LLMProvider,
+  StorageCleanupConfig,
+  StorageQuotaInfo,
   Template,
   UserLLMConfig,
-  CURRENT_SCHEMA_VERSION,
-  LLMProvider,
-  ExtensionStorage, // Added for export/import all
-  StorageQuotaInfo,
-  StorageCleanupConfig,
 } from '../common/storage_schema';
 
 import {
   getFromStorage,
-  saveToStorage,
   getStorageQuotaInfo,
   getStorageUsageBreakdown,
   performStorageCleanup,
+  saveToStorage,
 } from '../common/storage_utils';
 
 interface IOptionsController {
@@ -55,6 +55,7 @@ class OptionsController implements IOptionsController {
     providerId: null,
     selectedModelId: null,
     customEndpoint: null,
+    apiKey: null,
   };
 
   constructor() {
@@ -196,6 +197,8 @@ class OptionsController implements IOptionsController {
         ],
         requiresCustomEndpoint: false,
         helpText: 'OpenAI models accessed via OAuth authentication.',
+        apiKeyLabel: 'OpenAI API Key',
+        requiresApiKey: true,
       },
       {
         id: 'anthropic',
@@ -207,6 +210,8 @@ class OptionsController implements IOptionsController {
         ],
         requiresCustomEndpoint: false,
         helpText: 'Anthropic models accessed via OAuth authentication.',
+        apiKeyLabel: 'Anthropic API Key',
+        requiresApiKey: true,
       },
       {
         id: 'xai',
@@ -217,6 +222,8 @@ class OptionsController implements IOptionsController {
         ],
         requiresCustomEndpoint: false,
         helpText: 'xAI models accessed via OAuth authentication.',
+        apiKeyLabel: 'xAI API Key',
+        requiresApiKey: true,
       },
       {
         id: 'ollama',
@@ -229,6 +236,7 @@ class OptionsController implements IOptionsController {
         requiresCustomEndpoint: true,
         customEndpointLabel: 'Ollama Server URL',
         helpText: 'Local Ollama server - ensure it is running and accessible.',
+        requiresApiKey: false,
       },
     ];
   }
@@ -239,10 +247,16 @@ class OptionsController implements IOptionsController {
         providerId: null,
         selectedModelId: null,
         customEndpoint: null,
+        apiKey: null,
       });
     } catch (error) {
       this.handleError(error, 'Failed to load LLM config.');
-      this.currentUserLLMConfig = { providerId: null, selectedModelId: null, customEndpoint: null };
+      this.currentUserLLMConfig = {
+        providerId: null,
+        selectedModelId: null,
+        customEndpoint: null,
+        apiKey: null,
+      };
     }
     this.renderLLMProviderSelection();
   }
@@ -251,14 +265,23 @@ class OptionsController implements IOptionsController {
     const selProvId = (document.getElementById('llm-provider-select') as HTMLSelectElement)?.value;
     const provider = this.llmProviders.find(p => p.id === selProvId);
 
+    if (provider && provider.requiresApiKey) {
+      const apiKeyInput = document.getElementById('llm-api-key') as HTMLInputElement;
+      if (!apiKeyInput || !apiKeyInput.value.trim()) {
+        this.showFeedback(`API Key for ${provider.name} cannot be empty.`, 'error');
+        return;
+      }
+    }
     let cfgToSave: UserLLMConfig;
     if (!provider) {
-      cfgToSave = { providerId: null, selectedModelId: null, customEndpoint: null };
+      cfgToSave = { providerId: null, selectedModelId: null, customEndpoint: null, apiKey: null };
     } else {
+      const apiKeyInput = document.getElementById('llm-api-key') as HTMLInputElement;
       const endpointInput = document.getElementById('llm-custom-endpoint') as HTMLInputElement;
       const modelSelect = document.getElementById('llm-model-select') as HTMLSelectElement;
       cfgToSave = {
         providerId: provider.id,
+        apiKey: provider.requiresApiKey && apiKeyInput ? apiKeyInput.value.trim() || null : null,
         customEndpoint:
           provider.requiresCustomEndpoint && endpointInput
             ? endpointInput.value.trim() || null
@@ -328,15 +351,27 @@ class OptionsController implements IOptionsController {
     }
     cfg.providerId = prov.id;
 
-    // Add OAuth authentication status (placeholder for now)
-    const authStatus = document.createElement('div');
-    authStatus.innerHTML =
-      '<p><strong>Authentication:</strong> OAuth 2.0 (configured automatically)</p>';
-    authStatus.style.backgroundColor = '#f0f9ff';
-    authStatus.style.padding = '10px';
-    authStatus.style.borderRadius = '4px';
-    authStatus.style.marginBottom = '15px';
-    sc.append(authStatus);
+    if (prov.requiresApiKey) {
+      const l = document.createElement('label');
+      l.htmlFor = 'llm-api-key';
+      l.textContent = prov.apiKeyLabel || 'API Key:';
+      const i = document.createElement('input');
+      i.type = 'password';
+      i.id = 'llm-api-key';
+      i.name = 'llm-api-key';
+      i.value = cfg.providerId === prov.id && cfg.apiKey ? cfg.apiKey : '';
+      i.placeholder = 'Enter API key';
+      i.style.width = 'calc(90% - 100px)';
+      const b = document.createElement('button');
+      b.id = 'verify-api-key-button';
+      b.textContent = 'Verify';
+      b.disabled = true;
+      b.title = 'Not implemented';
+      b.style.marginLeft = '10px';
+      sc.append(l, document.createElement('br'), i, b, document.createElement('br'));
+    } else if (cfg.providerId === prov.id) {
+      cfg.apiKey = null;
+    }
 
     if (prov.requiresCustomEndpoint) {
       const l = document.createElement('label');
@@ -638,6 +673,7 @@ index 0000000..abcd123
         providerId: null,
         selectedModelId: null,
         customEndpoint: null,
+        apiKey: null,
       });
       const appSettings = await getFromStorage('appSettings', {
         schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -705,6 +741,7 @@ index 0000000..abcd123
             providerId: null,
             selectedModelId: null,
             customEndpoint: null,
+            apiKey: null,
           },
           appSettings: importedData.appSettings || {
             schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -878,7 +915,7 @@ index 0000000..abcd123
     // Update breakdown
     const breakdownContainer = document.getElementById('storage-breakdown');
     if (breakdownContainer) {
-      const items = Object.entries(breakdown)
+      breakdownContainer.innerHTML = Object.entries(breakdown)
         .sort(([, a], [, b]) => b - a)
         .map(
           ([key, size]) => `
@@ -889,7 +926,6 @@ index 0000000..abcd123
                 `,
         )
         .join('');
-      breakdownContainer.innerHTML = items;
     }
 
     // Show status message

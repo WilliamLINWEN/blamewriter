@@ -17,6 +17,7 @@ interface GenerateRequest {
   llmConfig: {
     providerId: string;
     modelId: string;
+    apiKey: string | null;
     customEndpoint: string | null;
   };
 }
@@ -152,6 +153,7 @@ class PopupController {
           this.currentUserLLMConfig = {
             providerId: this.llmProviderSelect.value || null,
             selectedModelId: null,
+            apiKey: null,
             customEndpoint: null,
           };
         }
@@ -497,6 +499,7 @@ class PopupController {
           providerId: this.currentUserLLMConfig.providerId!,
           modelId: this.currentUserLLMConfig.selectedModelId!,
           customEndpoint: this.currentUserLLMConfig.customEndpoint,
+          apiKey: this.currentUserLLMConfig.apiKey || null,
         },
       };
 
@@ -539,6 +542,7 @@ class PopupController {
           { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
         ],
         requiresCustomEndpoint: false,
+        requiresApiKey: true,
       },
       {
         id: 'anthropic',
@@ -549,6 +553,7 @@ class PopupController {
           { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' },
         ],
         requiresCustomEndpoint: false,
+        requiresApiKey: true,
       },
       {
         id: 'ollama',
@@ -558,6 +563,7 @@ class PopupController {
           { id: 'codellama', name: 'CodeLlama' },
         ],
         requiresCustomEndpoint: true,
+        requiresApiKey: false,
       },
     ];
   }
@@ -578,6 +584,7 @@ class PopupController {
         providerId: null,
         selectedModelId: null,
         customEndpoint: null,
+        apiKey: null,
       });
 
       this.llmProviderSelect.innerHTML = '<option value="">-- Select Provider --</option>';
@@ -598,6 +605,7 @@ class PopupController {
           providerId: firstProvider.id,
           selectedModelId: null,
           customEndpoint: null,
+          apiKey: null,
         };
         console.log('✅ Auto-selected first LLM provider:', firstProvider.name);
       }
