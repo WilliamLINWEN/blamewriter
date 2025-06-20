@@ -11,9 +11,8 @@ export const OAUTH_CONFIG = {
   TOKEN_URL: 'https://bitbucket.org/site/oauth2/access_token',
   REDIRECT_URL: `https://${chrome.runtime.id}.chromiumapp.org/callback`,
   SCOPES: ['pullrequest', 'repository', 'account'],
-  TOKEN_STORAGE_KEY: 'bitbucket_auth'
+  TOKEN_STORAGE_KEY: 'bitbucket_auth',
 };
-
 
 /**
  * Bitbucket OAuth 2.0 endpoints and configuration
@@ -22,24 +21,24 @@ export const BITBUCKET_OAUTH_CONFIG = {
   // Bitbucket OAuth endpoints
   AUTHORIZATION_ENDPOINT: 'https://bitbucket.org/site/oauth2/authorize',
   TOKEN_ENDPOINT: 'https://bitbucket.org/site/oauth2/access_token',
-  
+
   // Required OAuth scopes for PR description generation
   REQUIRED_SCOPES: [
     'repositories', // Access to repositories
-    'pullrequests'  // Access to pull requests
+    'pullrequests', // Access to pull requests
   ],
-  
+
   // OAuth flow parameters
   RESPONSE_TYPE: 'code',
   GRANT_TYPE: 'authorization_code',
-  
+
   // Token storage keys
   STORAGE_KEYS: {
     ACCESS_TOKEN: 'bitbucket_access_token',
     REFRESH_TOKEN: 'bitbucket_refresh_token',
     TOKEN_EXPIRY: 'bitbucket_token_expiry',
-    USER_INFO: 'bitbucket_user_info'
-  }
+    USER_INFO: 'bitbucket_user_info',
+  },
 } as const;
 
 /**
@@ -48,17 +47,17 @@ export const BITBUCKET_OAUTH_CONFIG = {
 export const BACKEND_OAUTH_CONFIG = {
   // Development backend
   DEV_BASE_URL: 'http://localhost:3001',
-  
+
   // Production backend (to be updated with actual production URL)
   PROD_BASE_URL: 'https://api.blamewriter.com',
-  
+
   // OAuth endpoints on our backend
   ENDPOINTS: {
     OAUTH_INIT: '/api/auth/bitbucket',
     OAUTH_CALLBACK: '/api/auth/callback',
     OAUTH_REFRESH: '/api/auth/refresh',
-    OAUTH_VALIDATE: '/api/auth/validate'
-  }
+    OAUTH_VALIDATE: '/api/auth/validate',
+  },
 } as const;
 
 /**
@@ -68,7 +67,7 @@ export function getBackendBaseUrl(): string {
   // For now, always use development URL since we're in development
   // In the future, this can be configured per environment
   return BACKEND_OAUTH_CONFIG.DEV_BASE_URL;
-  
+
   // TODO: Implement proper environment detection for production deployment
   // if (process.env.NODE_ENV === 'development') {
   //   return BACKEND_OAUTH_CONFIG.DEV_BASE_URL;
@@ -89,15 +88,19 @@ export function generateOAuthState(): string {
 /**
  * Build OAuth authorization URL
  */
-export function buildAuthorizationUrl(clientId: string, redirectUri: string, state: string): string {
+export function buildAuthorizationUrl(
+  clientId: string,
+  redirectUri: string,
+  state: string,
+): string {
   const params = new URLSearchParams({
     response_type: BITBUCKET_OAUTH_CONFIG.RESPONSE_TYPE,
     client_id: clientId,
     redirect_uri: redirectUri,
     scope: BITBUCKET_OAUTH_CONFIG.REQUIRED_SCOPES.join(' '),
-    state: state
+    state: state,
   });
-  
+
   return `${BITBUCKET_OAUTH_CONFIG.AUTHORIZATION_ENDPOINT}?${params.toString()}`;
 }
 
@@ -136,7 +139,7 @@ export enum OAuthErrorType {
   UNSUPPORTED_RESPONSE_TYPE = 'unsupported_response_type',
   INVALID_SCOPE = 'invalid_scope',
   NETWORK_ERROR = 'network_error',
-  UNKNOWN_ERROR = 'unknown_error'
+  UNKNOWN_ERROR = 'unknown_error',
 }
 
 /**

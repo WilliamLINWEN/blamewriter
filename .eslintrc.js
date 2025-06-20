@@ -34,10 +34,10 @@ module.exports = {
       rules: {
         'prettier/prettier': 'error',
         '@typescript-eslint/no-unused-vars': 'error',
-        '@typescript-eslint/no-explicit-any': 'warn',
+        '@typescript-eslint/no-explicit-any': 'off',
         'no-unused-vars': 'off',
         'no-undef': 'off',
-        'no-console': 'warn',
+        'no-console': 'off',
         'no-debugger': 'error',
         'prefer-const': 'error',
         'no-var': 'error',

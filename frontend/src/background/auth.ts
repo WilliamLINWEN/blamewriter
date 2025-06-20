@@ -92,7 +92,7 @@ export class BitbucketAuthManager {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${OAUTH_CONFIG.CLIENT_ID}:${OAUTH_CONFIG.CLIENT_SECRET}`)}`,
+        Authorization: `Basic ${btoa(`${OAUTH_CONFIG.CLIENT_ID}:${OAUTH_CONFIG.CLIENT_SECRET}`)}`,
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',

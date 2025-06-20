@@ -9,26 +9,27 @@ const bitbucketPrRegex = /https:\/\/bitbucket\.org\/.*\/pull-requests\/.*/;
 if (bitbucketPrRegex.test(currentUrl)) {
   console.log('Bitbucket PR page detected.');
 
-  const prInfoRegex = /https:\/\/bitbucket\.org\/(?<workspace>[^/]+)\/(?<repoSlug>[^/]+)\/pull-requests\/(?<prId>\d+)/;
+  const prInfoRegex =
+    /https:\/\/bitbucket\.org\/(?<workspace>[^/]+)\/(?<repoSlug>[^/]+)\/pull-requests\/(?<prId>\d+)/;
   const match = currentUrl.match(prInfoRegex);
 
   if (match && match.groups) {
     const { workspace, repoSlug, prId } = match.groups;
-    
+
     // Ensure all required fields are present
     if (workspace && repoSlug && prId) {
-      console.log("Workspace:", workspace);
-      console.log("Repository Slug:", repoSlug);
-      console.log("Pull Request ID:", prId);
+      console.log('Workspace:', workspace);
+      console.log('Repository Slug:', repoSlug);
+      console.log('Pull Request ID:', prId);
 
       // Prepare prInfo object for potential UI injection
       const prInfo = { workspace, repoSlug, prId };
       injectCustomUI(prInfo);
     } else {
-      console.error("Could not extract all required PR information from URL.");
+      console.error('Could not extract all required PR information from URL.');
     }
   } else {
-    console.error("Could not parse PR information from URL.");
+    console.error('Could not parse PR information from URL.');
   }
 } else {
   console.log('Not a Bitbucket PR page.');
@@ -38,7 +39,7 @@ if (bitbucketPrRegex.test(currentUrl)) {
 // Future In-Page UI Injection Point
 // -----------------------------------------------------------------------
 function injectCustomUI(prInfo: { workspace: string; repoSlug: string; prId: string }) {
-  console.log("Placeholder for UI injection logic. PR Info:", prInfo);
+  console.log('Placeholder for UI injection logic. PR Info:', prInfo);
   // TODO: Implement actual UI injection
   // This section will be responsible for rendering custom UI elements
   // directly onto the Bitbucket PR page.

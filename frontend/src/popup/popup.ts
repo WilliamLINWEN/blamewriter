@@ -1,11 +1,6 @@
 // Popup script for Bitbucket PR Helper extension - Phase 3 OAuth Implementation
 
-import {
-    Template,
-    UserLLMConfig,
-    LLMProvider as LLMProviderDef,
-    ModelDetail
-} from '../common/storage_schema';
+import { Template, UserLLMConfig, LLMProvider as LLMProviderDef } from '../common/storage_schema';
 import { getFromStorage, updateTemplateUsageStats } from '../common/storage_utils';
 
 interface BitbucketPRInfo {
@@ -31,9 +26,9 @@ interface GenerateResponse {
   error?: string;
 }
 
-interface OAuthRequest {
-  action: 'oauth_authenticate' | 'oauth_get_status' | 'oauth_logout';
-}
+// interface OAuthRequest {
+//   action: 'oauth_authenticate' | 'oauth_get_status' | 'oauth_logout';
+// }
 
 interface OAuthResponse {
   success: boolean;
@@ -42,15 +37,15 @@ interface OAuthResponse {
   error?: string;
 }
 
-interface AuthenticateRequest {
-  action: 'authenticate';
-}
-
-interface AuthenticateResponse {
-  success: boolean;
-  userInfo?: any;
-  error?: string;
-}
+// interface AuthenticateRequest {
+//   action: 'authenticate';
+// }
+//
+// interface AuthenticateResponse {
+//   success: boolean;
+//   userInfo?: any;
+//   error?: string;
+// }
 
 class PopupController {
   private generateButton!: HTMLButtonElement;
@@ -92,11 +87,15 @@ class PopupController {
     this.actionButtons = document.querySelector('.action-buttons') as HTMLElement;
     this.copyButton = document.getElementById('copy-btn') as HTMLButtonElement;
     this.fillButton = document.getElementById('fill-btn') as HTMLButtonElement;
-    this.loadingSpinner = document.querySelector('.generate-button .loading-spinner') as HTMLElement;
+    this.loadingSpinner = document.querySelector(
+      '.generate-button .loading-spinner',
+    ) as HTMLElement;
     this.buttonText = document.querySelector('.btn-text') as HTMLElement;
     this.optionsButton = document.getElementById('options-btn') as HTMLButtonElement;
     this.templateSelect = document.getElementById('popup-template-select') as HTMLSelectElement;
-    this.llmProviderSelect = document.getElementById('popup-llm-provider-select') as HTMLSelectElement;
+    this.llmProviderSelect = document.getElementById(
+      'popup-llm-provider-select',
+    ) as HTMLSelectElement;
     this.llmModelSelect = document.getElementById('popup-llm-model-select') as HTMLSelectElement;
     this.authStatus = document.getElementById('auth-status') as HTMLElement;
 
@@ -107,12 +106,19 @@ class PopupController {
       templateSelect: !!this.templateSelect,
       llmProviderSelect: !!this.llmProviderSelect,
       llmModelSelect: !!this.llmModelSelect,
-      authStatus: !!this.authStatus
+      authStatus: !!this.authStatus,
     });
 
-    if (!this.generateButton || !this.resultTextarea ||
-        !this.statusMessage || !this.optionsButton || !this.templateSelect ||
-        !this.llmProviderSelect || !this.llmModelSelect || !this.authStatus) {
+    if (
+      !this.generateButton ||
+      !this.resultTextarea ||
+      !this.statusMessage ||
+      !this.optionsButton ||
+      !this.templateSelect ||
+      !this.llmProviderSelect ||
+      !this.llmModelSelect ||
+      !this.authStatus
+    ) {
       console.error('Required DOM elements not found');
       this.showError('Interface initialization failed.');
     }
@@ -120,9 +126,13 @@ class PopupController {
 
   private setupEventListeners(): void {
     this.generateButton.addEventListener('click', () => this.handleGenerateClick());
-    if (this.copyButton) this.copyButton.addEventListener('click', () => this.copyToClipboard());
-    if (this.fillButton) this.fillButton.addEventListener('click', () => this.fillIntoPage());
-    
+    if (this.copyButton) {
+      this.copyButton.addEventListener('click', () => this.copyToClipboard());
+    }
+    if (this.fillButton) {
+      this.fillButton.addEventListener('click', () => this.fillIntoPage());
+    }
+
     if (this.optionsButton) {
       this.optionsButton.addEventListener('click', () => {
         if (chrome.runtime.openOptionsPage) {
@@ -134,33 +144,33 @@ class PopupController {
     }
 
     if (this.llmProviderSelect) {
-        this.llmProviderSelect.addEventListener('change', () => {
-            if(this.currentUserLLMConfig) {
-                this.currentUserLLMConfig.providerId = this.llmProviderSelect.value || null;
-                this.currentUserLLMConfig.selectedModelId = null;
-            } else {
-                this.currentUserLLMConfig = { 
-                  providerId: this.llmProviderSelect.value || null, 
-                  selectedModelId: null, 
-                  customEndpoint: null 
-                };
-            }
-            this.renderLLMModelSelection();
-            this.updateGenerateButtonState();
-        });
+      this.llmProviderSelect.addEventListener('change', () => {
+        if (this.currentUserLLMConfig) {
+          this.currentUserLLMConfig.providerId = this.llmProviderSelect.value || null;
+          this.currentUserLLMConfig.selectedModelId = null;
+        } else {
+          this.currentUserLLMConfig = {
+            providerId: this.llmProviderSelect.value || null,
+            selectedModelId: null,
+            customEndpoint: null,
+          };
+        }
+        this.renderLLMModelSelection();
+        this.updateGenerateButtonState();
+      });
     }
 
     if (this.llmModelSelect) {
-        this.llmModelSelect.addEventListener('change', () => {
-             if(this.currentUserLLMConfig) {
-                this.currentUserLLMConfig.selectedModelId = this.llmModelSelect.value || null;
-             }
-             this.updateGenerateButtonState();
-        });
+      this.llmModelSelect.addEventListener('change', () => {
+        if (this.currentUserLLMConfig) {
+          this.currentUserLLMConfig.selectedModelId = this.llmModelSelect.value || null;
+        }
+        this.updateGenerateButtonState();
+      });
     }
 
     if (this.templateSelect) {
-        this.templateSelect.addEventListener('change', () => this.updateGenerateButtonState());
+      this.templateSelect.addEventListener('change', () => this.updateGenerateButtonState());
     }
   }
 
@@ -175,19 +185,23 @@ class PopupController {
 
   private setupStorageListeners(): void {
     chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName !== 'sync') {
-            return;
-        }
-        console.log("Popup: Storage changed in 'sync' area:", changes);
+      if (areaName !== 'sync') {
+        return;
+      }
+      console.log("Popup: Storage changed in 'sync' area:", changes);
 
-        if (changes.userLLMConfig) {
-            console.log("Popup: UserLLMConfig changed. Reloading LLM config for popup.");
-            this.loadAndRenderLLMConfig().catch(err => console.error("Popup: Error reloading LLM config on change:", err));
-        }
-        if (changes.templates) {
-            console.log("Popup: Templates changed. Reloading templates for popup.");
-            this.loadAndRenderTemplates().catch(err => console.error("Popup: Error reloading templates on change:", err));
-        }
+      if (changes.userLLMConfig) {
+        console.log('Popup: UserLLMConfig changed. Reloading LLM config for popup.');
+        this.loadAndRenderLLMConfig().catch(err =>
+          console.error('Popup: Error reloading LLM config on change:', err),
+        );
+      }
+      if (changes.templates) {
+        console.log('Popup: Templates changed. Reloading templates for popup.');
+        this.loadAndRenderTemplates().catch(err =>
+          console.error('Popup: Error reloading templates on change:', err),
+        );
+      }
     });
   }
 
@@ -200,12 +214,12 @@ class PopupController {
       this.isCheckingAuth = true;
       this.updateAuthStatus();
 
-      const response = await this.sendMessageToBackground({
-        action: 'oauth_get_status'
-      }) as OAuthResponse;
+      const response = (await this.sendMessageToBackground({
+        action: 'oauth_get_status',
+      })) as OAuthResponse;
 
       this.isCheckingAuth = false;
-      
+
       if (response.success) {
         this.isAuthenticated = response.authenticated || false;
         this.userInfo = response.userInfo;
@@ -229,13 +243,13 @@ class PopupController {
   private async authenticateUser(): Promise<void> {
     try {
       console.log('🔐 Starting authentication...');
-      
+
       this.isCheckingAuth = true;
       this.updateAuthStatus();
 
-      const response = await this.sendMessageToBackground({
-        action: 'oauth_authenticate'
-      }) as OAuthResponse;
+      const response = (await this.sendMessageToBackground({
+        action: 'oauth_authenticate',
+      })) as OAuthResponse;
 
       this.isCheckingAuth = false;
 
@@ -258,7 +272,9 @@ class PopupController {
       console.error('Authentication error:', error);
       this.isCheckingAuth = false;
       this.isAuthenticated = false;
-      this.showError(`Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.showError(
+        `Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       this.updateAuthStatus();
       this.updateGenerateButtonState();
     }
@@ -266,9 +282,9 @@ class PopupController {
 
   private async logoutUser(): Promise<void> {
     try {
-      const response = await this.sendMessageToBackground({
-        action: 'oauth_logout'
-      }) as OAuthResponse;
+      const response = (await this.sendMessageToBackground({
+        action: 'oauth_logout',
+      })) as OAuthResponse;
 
       if (response.success) {
         this.isAuthenticated = false;
@@ -287,7 +303,9 @@ class PopupController {
   }
 
   private updateAuthStatus(): void {
-    if (!this.authStatus) return;
+    if (!this.authStatus) {
+      return;
+    }
 
     // Clear previous content
     this.authStatus.innerHTML = '';
@@ -308,7 +326,7 @@ class PopupController {
         <div class="auth-message">✅ Authenticated as <strong>${username}</strong></div>
         <button class="auth-login-button" id="logout-btn" style="background-color: #de350b;">Logout</button>
       `;
-      
+
       // Add logout button listener
       const logoutBtn = document.getElementById('logout-btn');
       if (logoutBtn) {
@@ -320,7 +338,7 @@ class PopupController {
         <div class="auth-message">🔐 Authentication required to generate PR descriptions</div>
         <button class="auth-login-button" id="login-btn">Login with Bitbucket</button>
       `;
-      
+
       // Add login button listener
       const loginBtn = document.getElementById('login-btn');
       if (loginBtn) {
@@ -334,13 +352,15 @@ class PopupController {
   // ========================
 
   private updateGenerateButtonState(): void {
-    if (!this.generateButton) return;
+    if (!this.generateButton) {
+      return;
+    }
 
     console.log('🔄 updateGenerateButtonState called');
     console.log('🔍 Auth state:', {
       isAuthenticated: this.isAuthenticated,
       isCheckingAuth: this.isCheckingAuth,
-      userInfo: this.userInfo
+      userInfo: this.userInfo,
     });
 
     // Check authentication
@@ -369,10 +389,11 @@ class PopupController {
     }
 
     // Check LLM configuration
-    const hasValidLLMConfig = this.currentUserLLMConfig && 
-                              this.currentUserLLMConfig.providerId && 
-                              this.currentUserLLMConfig.selectedModelId;
-    
+    const hasValidLLMConfig =
+      this.currentUserLLMConfig &&
+      this.currentUserLLMConfig.providerId &&
+      this.currentUserLLMConfig.selectedModelId;
+
     if (!hasValidLLMConfig) {
       this.generateButton.disabled = true;
       this.generateButton.title = 'Please select an LLM provider and model';
@@ -404,10 +425,11 @@ class PopupController {
     }
 
     // Check LLM configuration
-    const hasValidLLMConfig = this.currentUserLLMConfig && 
-                              this.currentUserLLMConfig.providerId && 
-                              this.currentUserLLMConfig.selectedModelId;
-    
+    const hasValidLLMConfig =
+      this.currentUserLLMConfig &&
+      this.currentUserLLMConfig.providerId &&
+      this.currentUserLLMConfig.selectedModelId;
+
     if (!hasValidLLMConfig) {
       return { isValid: false, error: 'Please select an LLM provider and model' };
     }
@@ -452,7 +474,9 @@ class PopupController {
         return;
       }
 
-      const selectedTemplate = this.availableTemplates.find(t => t.id === this.templateSelect.value);
+      const selectedTemplate = this.availableTemplates.find(
+        t => t.id === this.templateSelect.value,
+      );
       if (!selectedTemplate) {
         this.showError('Selected template not found.');
         this.setLoadingState(false);
@@ -472,12 +496,12 @@ class PopupController {
         llmConfig: {
           providerId: this.currentUserLLMConfig.providerId!,
           modelId: this.currentUserLLMConfig.selectedModelId!,
-          customEndpoint: this.currentUserLLMConfig.customEndpoint
-        }
+          customEndpoint: this.currentUserLLMConfig.customEndpoint,
+        },
       };
 
       console.log('Sending generate request...');
-      const response = await this.sendMessageToBackground(request) as GenerateResponse;
+      const response = (await this.sendMessageToBackground(request)) as GenerateResponse;
       console.log('Generate response received:', response);
 
       if (response.description) {
@@ -496,7 +520,7 @@ class PopupController {
   }
 
   private isValidBitbucketPRUrl(url: string): boolean {
-    const prUrlPattern = /^https:\/\/bitbucket\.org\/[^\/]+\/[^\/]+\/pull-requests\/\d+/;
+    const prUrlPattern = /^https:\/\/bitbucket\.org\/[^/]+\/[^/]+\/pull-requests\/\d+/;
     return prUrlPattern.test(url);
   }
 
@@ -506,102 +530,140 @@ class PopupController {
 
   private initializeLLMProviderData(): void {
     this.availableLLMProviders = [
-        { id: 'openai', name: 'OpenAI', models: [ {id: 'gpt-4o', name: 'GPT-4o'}, {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}, { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' } ], requiresCustomEndpoint: false },
-        { id: 'anthropic', name: 'Anthropic (Claude)', models: [ {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}, {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet'}, { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' } ], requiresCustomEndpoint: false },
-        { id: 'ollama', name: 'Ollama (Local)', models: [ {id: 'llama3', name: 'Llama 3 (default)'}, {id: 'codellama', name: 'CodeLlama'} ], requiresCustomEndpoint: true }
+      {
+        id: 'openai',
+        name: 'OpenAI',
+        models: [
+          { id: 'gpt-4o', name: 'GPT-4o' },
+          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+          { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+        ],
+        requiresCustomEndpoint: false,
+      },
+      {
+        id: 'anthropic',
+        name: 'Anthropic (Claude)',
+        models: [
+          { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
+          { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet' },
+          { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' },
+        ],
+        requiresCustomEndpoint: false,
+      },
+      {
+        id: 'ollama',
+        name: 'Ollama (Local)',
+        models: [
+          { id: 'llama3', name: 'Llama 3 (default)' },
+          { id: 'codellama', name: 'CodeLlama' },
+        ],
+        requiresCustomEndpoint: true,
+      },
     ];
   }
 
   private async loadAndRenderLLMConfig(): Promise<void> {
-    if (!this.llmProviderSelect || !this.llmModelSelect) return;
+    if (!this.llmProviderSelect || !this.llmModelSelect) {
+      return;
+    }
     this.initializeLLMProviderData();
 
-    this.llmProviderSelect.disabled = true; 
+    this.llmProviderSelect.disabled = true;
     this.llmModelSelect.disabled = true;
     this.llmProviderSelect.innerHTML = '<option value="">-- Loading --</option>';
     this.llmModelSelect.innerHTML = '<option value="">-- Wait --</option>';
 
     try {
-        this.currentUserLLMConfig = await getFromStorage('userLLMConfig', { providerId: null, selectedModelId: null, customEndpoint: null });
+      this.currentUserLLMConfig = await getFromStorage('userLLMConfig', {
+        providerId: null,
+        selectedModelId: null,
+        customEndpoint: null,
+      });
 
-        this.llmProviderSelect.innerHTML = '<option value="">-- Select Provider --</option>';
-        this.availableLLMProviders.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id; 
-            option.textContent = p.name;
-            this.llmProviderSelect.appendChild(option);
-        });
+      this.llmProviderSelect.innerHTML = '<option value="">-- Select Provider --</option>';
+      this.availableLLMProviders.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = p.name;
+        this.llmProviderSelect.appendChild(option);
+      });
 
-        if (this.currentUserLLMConfig && this.currentUserLLMConfig.providerId) {
-            this.llmProviderSelect.value = this.currentUserLLMConfig.providerId;
-        } else if (this.availableLLMProviders.length > 0 && this.availableLLMProviders[0]) {
-            // Auto-select the first provider for better UX
-            const firstProvider = this.availableLLMProviders[0];
-            this.llmProviderSelect.value = firstProvider.id;
-            this.currentUserLLMConfig = { 
-                providerId: firstProvider.id, 
-                selectedModelId: null, 
-                customEndpoint: null 
-            };
-            console.log('✅ Auto-selected first LLM provider:', firstProvider.name);
-        }
-        this.llmProviderSelect.disabled = false;
-        this.renderLLMModelSelection();
-        this.updateGenerateButtonState();
+      if (this.currentUserLLMConfig && this.currentUserLLMConfig.providerId) {
+        this.llmProviderSelect.value = this.currentUserLLMConfig.providerId;
+      } else if (this.availableLLMProviders.length > 0 && this.availableLLMProviders[0]) {
+        // Auto-select the first provider for better UX
+        const firstProvider = this.availableLLMProviders[0];
+        this.llmProviderSelect.value = firstProvider.id;
+        this.currentUserLLMConfig = {
+          providerId: firstProvider.id,
+          selectedModelId: null,
+          customEndpoint: null,
+        };
+        console.log('✅ Auto-selected first LLM provider:', firstProvider.name);
+      }
+      this.llmProviderSelect.disabled = false;
+      this.renderLLMModelSelection();
+      this.updateGenerateButtonState();
     } catch (error) {
-        this.llmProviderSelect.innerHTML = '<option value="">-- Error --</option>';
-        this.llmModelSelect.innerHTML = '<option value="">-- Error --</option>';
-        this.showError("Failed to load LLM config.");
+      this.llmProviderSelect.innerHTML = '<option value="">-- Error --</option>';
+      this.llmModelSelect.innerHTML = '<option value="">-- Error --</option>';
+      this.showError('Failed to load LLM config.');
     }
   }
 
   private renderLLMModelSelection(): void {
-    if (!this.llmModelSelect || !this.llmProviderSelect) return;
+    if (!this.llmModelSelect || !this.llmProviderSelect) {
+      return;
+    }
     const selectedProviderId = this.llmProviderSelect.value;
     const provider = this.availableLLMProviders.find(p => p.id === selectedProviderId);
 
-    this.llmModelSelect.innerHTML = ''; 
+    this.llmModelSelect.innerHTML = '';
     this.llmModelSelect.disabled = true;
 
     if (provider && provider.models && provider.models.length > 0) {
-        const defaultOpt = document.createElement('option'); 
-        defaultOpt.value = ""; 
-        defaultOpt.textContent = "-- Select Model --";
-        this.llmModelSelect.appendChild(defaultOpt);
-        
-        provider.models.forEach(model => { 
-            const option = document.createElement('option');
-            option.value = model.id;
-            option.textContent = model.name;
-            this.llmModelSelect.appendChild(option);
-        });
-        
-        if (this.currentUserLLMConfig && 
-            this.currentUserLLMConfig.providerId === selectedProviderId && 
-            this.currentUserLLMConfig.selectedModelId) {
-            if(provider.models.some(m => m.id === this.currentUserLLMConfig!.selectedModelId)) {
-                this.llmModelSelect.value = this.currentUserLLMConfig.selectedModelId;
-            }
-        } else if (provider.models.length > 0 && provider.models[0]) {
-            // Auto-select the first model for better UX
-            const firstModel = provider.models[0];
-            this.llmModelSelect.value = firstModel.id;
-            if (this.currentUserLLMConfig) {
-                this.currentUserLLMConfig.selectedModelId = firstModel.id;
-            }
-            console.log('✅ Auto-selected first model:', firstModel.name);
-        }
-        this.llmModelSelect.disabled = false;
-    } else {
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = '-- Select Model --';
+      this.llmModelSelect.appendChild(defaultOpt);
+
+      provider.models.forEach(model => {
         const option = document.createElement('option');
-        option.value = '';
-        option.textContent = selectedProviderId ? '-- No Models --' : '-- Select Provider --';
+        option.value = model.id;
+        option.textContent = model.name;
         this.llmModelSelect.appendChild(option);
+      });
+
+      if (
+        this.currentUserLLMConfig &&
+        this.currentUserLLMConfig.providerId === selectedProviderId &&
+        this.currentUserLLMConfig.selectedModelId
+      ) {
+        if (provider.models.some(m => m.id === this.currentUserLLMConfig!.selectedModelId)) {
+          this.llmModelSelect.value = this.currentUserLLMConfig.selectedModelId;
+        }
+      } else if (provider.models.length > 0 && provider.models[0]) {
+        // Auto-select the first model for better UX
+        const firstModel = provider.models[0];
+        this.llmModelSelect.value = firstModel.id;
+        if (this.currentUserLLMConfig) {
+          this.currentUserLLMConfig.selectedModelId = firstModel.id;
+        }
+        console.log('✅ Auto-selected first model:', firstModel.name);
+      }
+      this.llmModelSelect.disabled = false;
+    } else {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = selectedProviderId ? '-- No Models --' : '-- Select Provider --';
+      this.llmModelSelect.appendChild(option);
     }
   }
 
   private async loadAndRenderTemplates(): Promise<void> {
-    if (!this.templateSelect) return;
+    if (!this.templateSelect) {
+      return;
+    }
 
     this.templateSelect.disabled = true;
     this.templateSelect.innerHTML = '<option value="">-- Loading Templates --</option>';
@@ -661,38 +723,40 @@ class PopupController {
     try {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
-      if (!currentTab || !currentTab.url) { 
-        this.showError('Cannot access current page.'); 
-        return; 
+      if (!currentTab || !currentTab.url) {
+        this.showError('Cannot access current page.');
+        return;
       }
-      
+
       const prInfo = this.extractPRInfoFromUrl(currentTab.url);
-      if (!prInfo) { 
+      if (!prInfo) {
         this.showInfo('Navigate to a Bitbucket PR page to generate descriptions.');
-        return; 
+        return;
       }
-      
+
       this.showInfo(`PR: ${prInfo.workspace}/${prInfo.repo}#${prInfo.prId}`);
-    } catch (error) { 
-      this.showError('Error checking page.'); 
+    } catch (error) {
+      this.showError('Error checking page.');
     }
   }
 
   private extractPRInfoFromUrl(url: string): BitbucketPRInfo | null {
-    const prUrlPattern = /^https:\/\/bitbucket\.org\/([^\/]+)\/([^\/]+)\/pull-requests\/(\d+)/;
+    const prUrlPattern = /^https:\/\/bitbucket\.org\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)/;
     const match = url.match(prUrlPattern);
-    if (!match) return null;
-    return { 
-      workspace: match[1]!, 
-      repo: match[2]!, 
-      prId: match[3]!, 
-      fullUrl: url 
+    if (!match) {
+      return null;
+    }
+    return {
+      workspace: match[1]!,
+      repo: match[2]!,
+      prId: match[3]!,
+      fullUrl: url,
     };
   }
 
   private async sendMessageToBackground(message: any): Promise<any> {
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (response) => {
+      chrome.runtime.sendMessage(message, response => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));
         } else {
@@ -742,25 +806,31 @@ class PopupController {
 
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const activeTab = tabs[0];
-      
+
       if (!activeTab?.id) {
         this.showError('Cannot access current tab');
         return;
       }
 
       // Send message to content script to fill the description
-      chrome.tabs.sendMessage(activeTab.id, {
-        action: 'fillDescription',
-        description: this.resultTextarea.value
-      }, (response) => {
-        if (chrome.runtime.lastError) {
-          this.showError('Failed to fill description. Please ensure you are on a Bitbucket PR page.');
-        } else if (response && response.success) {
-          this.showSuccess('Description filled into page!');
-        } else {
-          this.showError('Failed to fill description into page');
-        }
-      });
+      chrome.tabs.sendMessage(
+        activeTab.id,
+        {
+          action: 'fillDescription',
+          description: this.resultTextarea.value,
+        },
+        response => {
+          if (chrome.runtime.lastError) {
+            this.showError(
+              'Failed to fill description. Please ensure you are on a Bitbucket PR page.',
+            );
+          } else if (response && response.success) {
+            this.showSuccess('Description filled into page!');
+          } else {
+            this.showError('Failed to fill description into page');
+          }
+        },
+      );
     } catch (error) {
       console.error('Error filling into page:', error);
       this.showError('Failed to fill description into page');
@@ -772,9 +842,9 @@ class PopupController {
     console.log('🔍 Elements check:', {
       generateButton: !!this.generateButton,
       loadingSpinner: !!this.loadingSpinner,
-      buttonText: !!this.buttonText
+      buttonText: !!this.buttonText,
     });
-    
+
     if (this.generateButton && this.loadingSpinner && this.buttonText) {
       if (loading) {
         this.generateButton.disabled = true;

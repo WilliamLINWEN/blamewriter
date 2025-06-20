@@ -1,10 +1,6 @@
 // frontend/src/common/oauth_storage.ts
 
-import { 
-  OAuthToken, 
-  BitbucketUserInfo, 
-  BITBUCKET_OAUTH_CONFIG 
-} from './oauth_config';
+import { OAuthToken, BitbucketUserInfo, BITBUCKET_OAUTH_CONFIG } from './oauth_config';
 
 /**
  * OAuth token storage interface for chrome.storage.local
@@ -25,16 +21,16 @@ export interface OAuthTokenStorage {
  */
 export async function saveOAuthTokens(
   token: OAuthToken,
-  userInfo?: BitbucketUserInfo
+  userInfo?: BitbucketUserInfo,
 ): Promise<void> {
   const keys = BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS;
-  let tokenData = {
+  const tokenData = {
     [keys.ACCESS_TOKEN]: token.access_token,
     ...(token.refresh_token && { [keys.REFRESH_TOKEN]: token.refresh_token }),
     ...(token.expires_in && {
-      [keys.TOKEN_EXPIRY]: Date.now() + token.expires_in * 1000
+      [keys.TOKEN_EXPIRY]: Date.now() + token.expires_in * 1000,
     }),
-    ...(userInfo && { [keys.USER_INFO]: userInfo })
+    ...(userInfo && { [keys.USER_INFO]: userInfo }),
   };
 
   return new Promise((resolve, reject) => {
@@ -70,11 +66,11 @@ export async function getOAuthTokens(): Promise<OAuthTokenStorage | null> {
         BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
         BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
         BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.TOKEN_EXPIRY,
-        BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.USER_INFO
+        BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.USER_INFO,
       ];
 
       // @ts-ignore
-      chrome.storage.local.get(keys, (result) => {
+      chrome.storage.local.get(keys, result => {
         // @ts-ignore
         if (chrome.runtime.lastError) {
           // @ts-ignore
@@ -93,7 +89,7 @@ export async function getOAuthTokens(): Promise<OAuthTokenStorage | null> {
           access_token: result.bitbucket_access_token,
           refresh_token: result.bitbucket_refresh_token,
           token_expiry: result.bitbucket_token_expiry,
-          user_info: result.bitbucket_user_info
+          user_info: result.bitbucket_user_info,
         };
 
         resolve(tokenData);
@@ -112,7 +108,7 @@ export async function getOAuthTokens(): Promise<OAuthTokenStorage | null> {
 export async function isOAuthTokenValid(): Promise<boolean> {
   try {
     const tokens = await getOAuthTokens();
-    
+
     if (!tokens || !tokens.access_token) {
       return false;
     }
@@ -121,7 +117,7 @@ export async function isOAuthTokenValid(): Promise<boolean> {
     if (tokens.token_expiry) {
       const now = Date.now();
       const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
-      if (now >= (tokens.token_expiry - bufferTime)) {
+      if (now >= tokens.token_expiry - bufferTime) {
         console.log('OAuth token is expired or expires soon');
         return false;
       }
@@ -142,7 +138,7 @@ export async function isOAuthTokenValid(): Promise<boolean> {
 export async function getValidAccessToken(): Promise<string | null> {
   try {
     const tokens = await getOAuthTokens();
-    
+
     if (!tokens) {
       return null;
     }
@@ -169,7 +165,7 @@ export async function clearOAuthTokens(): Promise<void> {
     BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
     BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
     BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.TOKEN_EXPIRY,
-    BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.USER_INFO
+    BITBUCKET_OAUTH_CONFIG.STORAGE_KEYS.USER_INFO,
   ];
 
   return new Promise((resolve, reject) => {
@@ -225,7 +221,7 @@ export async function getAndClearOAuthState(): Promise<string | null> {
   return new Promise((resolve, reject) => {
     try {
       // @ts-ignore
-      chrome.storage.local.get(['oauth_state'], (result) => {
+      chrome.storage.local.get(['oauth_state'], result => {
         // @ts-ignore
         if (chrome.runtime.lastError) {
           // @ts-ignore
