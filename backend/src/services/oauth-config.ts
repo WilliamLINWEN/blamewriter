@@ -1,6 +1,6 @@
 /**
  * OAuth Configuration Management
- * 
+ *
  * This module manages OAuth 2.0 configuration for Bitbucket authentication,
  * including client credentials, scopes, and redirect URLs.
  */
@@ -42,7 +42,7 @@ export interface BitbucketUserInfo {
 export const BITBUCKET_SCOPES = [
   'repository', // Access to public and private repositories
   'pullrequest', // Access to pull requests
-  'account'       // Access to user account information
+  'account', // Access to user account information
 ];
 
 /**
@@ -51,7 +51,7 @@ export const BITBUCKET_SCOPES = [
 export const BITBUCKET_OAUTH_URLS = {
   AUTHORIZATION: 'https://bitbucket.org/site/oauth2/authorize',
   TOKEN: 'https://bitbucket.org/site/oauth2/access_token',
-  API_BASE: 'https://api.bitbucket.org/2.0'
+  API_BASE: 'https://api.bitbucket.org/2.0',
 } as const;
 
 /**
@@ -81,20 +81,24 @@ export function getOAuthConfig(): OAuthConfig {
     authorizationUrl: BITBUCKET_OAUTH_URLS.AUTHORIZATION,
     tokenUrl: BITBUCKET_OAUTH_URLS.TOKEN,
     apiBaseUrl: BITBUCKET_OAUTH_URLS.API_BASE,
-    redirectUri
+    redirectUri,
   };
 }
 
 /**
  * Build authorization URL for OAuth flow
  */
-export function buildAuthorizationUrl(clientId: string, redirectUri: string, state: string): string {
+export function buildAuthorizationUrl(
+  clientId: string,
+  redirectUri: string,
+  state: string,
+): string {
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
     redirect_uri: redirectUri,
     scope: BITBUCKET_SCOPES.join(' '),
-    state: state
+    state: state,
   });
 
   return `${BITBUCKET_OAUTH_URLS.AUTHORIZATION}?${params.toString()}`;
@@ -108,7 +112,7 @@ export function validateOAuthConfig(): { isValid: boolean; errors: string[] } {
 
   try {
     const config = getOAuthConfig();
-    
+
     // Validate redirect URI format
     try {
       const url = new URL(config.redirectUri);
@@ -128,13 +132,12 @@ export function validateOAuthConfig(): { isValid: boolean; errors: string[] } {
     if (config.clientSecret.length < 20) {
       errors.push('BITBUCKET_OAUTH_CLIENT_SECRET appears to be invalid');
     }
-
   } catch (error) {
     errors.push(error instanceof Error ? error.message : 'Unknown OAuth configuration error');
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }

@@ -18,7 +18,9 @@ class TestLLMProvider extends BaseLLMProvider {
   protected async executeLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
-  ): Promise<Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>> {
+  ): Promise<
+    Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>
+  > {
     return {
       description: `Mocked response for prompt: ${prompt}`,
       model: options?.model || 'test-model',
@@ -44,13 +46,21 @@ class TestLLMProvider extends BaseLLMProvider {
   // Other abstract methods that need mock implementations if BaseLLMProvider calls them.
   // For now, these are not directly involved in template processing tests.
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  async testConnection(): Promise<boolean> { return true; }
+  async testConnection(): Promise<boolean> {
+    return true;
+  }
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  getCapabilities() { return { maxTokens: 1000, supportedModels: ['test-model'], supportsStreaming: false }; }
+  getCapabilities() {
+    return { maxTokens: 1000, supportedModels: ['test-model'], supportsStreaming: false };
+  }
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  async validateConfig(): Promise<boolean> { return true; }
+  async validateConfig(): Promise<boolean> {
+    return true;
+  }
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  async getAvailableModels(): Promise<string[]> { return ['test-model']; }
+  async getAvailableModels(): Promise<string[]> {
+    return ['test-model'];
+  }
 }
 
 describe('BaseLLMProvider Template Processing', () => {
@@ -62,7 +72,9 @@ describe('BaseLLMProvider Template Processing', () => {
 
   describe('validateTemplate()', () => {
     it('should return isValid: true for a valid template with known placeholders', () => {
-      const result = provider.publicValidateTemplate('Hello {BRANCH_NAME}, this is the diff: {DIFF_CONTENT}');
+      const result = provider.publicValidateTemplate(
+        'Hello {BRANCH_NAME}, this is the diff: {DIFF_CONTENT}',
+      );
       expect(result.isValid).toBe(true);
       expect(result.errors).toEqual([]);
     });
@@ -85,23 +97,27 @@ describe('BaseLLMProvider Template Processing', () => {
       expect(resultForInvalid.isValid).toBe(false);
       expect(resultForInvalid.errors).toContain('Mismatched curly braces in template.');
 
-
-      const resultWithBalancedButWrong = provider.publicValidateTemplate('Hello {BRANCH_NAME} and also BRANCH_NAME}');
-       expect(resultWithBalancedButWrong.isValid).toBe(false);
-       expect(resultWithBalancedButWrong.errors).toContain('Mismatched curly braces in template.');
-
+      const resultWithBalancedButWrong = provider.publicValidateTemplate(
+        'Hello {BRANCH_NAME} and also BRANCH_NAME}',
+      );
+      expect(resultWithBalancedButWrong.isValid).toBe(false);
+      expect(resultWithBalancedButWrong.errors).toContain('Mismatched curly braces in template.');
     });
 
     it('should return isValid: false for invalid placeholder syntax (spaces)', () => {
       const result = provider.publicValidateTemplate('Hello {BRANCH NAME}');
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Invalid placeholder format: {BRANCH NAME}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).');
+      expect(result.errors).toContain(
+        'Invalid placeholder format: {BRANCH NAME}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).',
+      );
     });
 
     it('should return isValid: false for invalid placeholder syntax (nested)', () => {
       const result = provider.publicValidateTemplate('Hello {{NESTED_PLACEHOLDER}}');
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Invalid placeholder format: {{NESTED_PLACEHOLDER}}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).');
+      expect(result.errors).toContain(
+        'Invalid placeholder format: {{NESTED_PLACEHOLDER}}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).',
+      );
     });
 
     it('should return isValid: false for unknown placeholders', () => {
@@ -111,7 +127,9 @@ describe('BaseLLMProvider Template Processing', () => {
     });
 
     it('should return isValid: false for templates containing <script> tags', () => {
-      const result = provider.publicValidateTemplate('Hello <script>alert("XSS")</script> {BRANCH_NAME}');
+      const result = provider.publicValidateTemplate(
+        'Hello <script>alert("XSS")</script> {BRANCH_NAME}',
+      );
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Template contains script tags, which are not allowed.');
     });
@@ -123,11 +141,15 @@ describe('BaseLLMProvider Template Processing', () => {
     });
 
     it('should return isValid: false for multiple errors', () => {
-        const result = provider.publicValidateTemplate('Hello {UNKNOWN} <script>foo</script> {BAD SYNTAX}');
-        expect(result.isValid).toBe(false);
-        expect(result.errors).toContain('Template contains script tags, which are not allowed.');
-        expect(result.errors).toContain('Invalid placeholder format: {BAD SYNTAX}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).');
-        expect(result.errors).toContain('Unknown placeholder: {UNKNOWN}.');
+      const result = provider.publicValidateTemplate(
+        'Hello {UNKNOWN} <script>foo</script> {BAD SYNTAX}',
+      );
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Template contains script tags, which are not allowed.');
+      expect(result.errors).toContain(
+        'Invalid placeholder format: {BAD SYNTAX}. Placeholders should be e.g. {PLACEHOLDER_NAME} (no spaces, no nesting).',
+      );
+      expect(result.errors).toContain('Unknown placeholder: {UNKNOWN}.');
     });
   });
 
@@ -194,19 +216,25 @@ describe('BaseLLMProvider Template Processing', () => {
         templateData: { DIFF_CONTENT: 'diff' },
       };
       await expect(provider.generatePRDescription(options)).rejects.toThrow(LLMProviderError);
-      await expect(provider.generatePRDescription(options)).rejects.toThrow(/Invalid template: Invalid placeholder format/);
+      await expect(provider.generatePRDescription(options)).rejects.toThrow(
+        /Invalid template: Invalid placeholder format/,
+      );
     });
 
     it('should use default template if options.template is not provided', async () => {
       const defaultTemplate = provider.publicGetDefaultPromptTemplate();
       const templateData = { DIFF_CONTENT: 'diff content here' };
-      executeLLMSpy.mockResolvedValueOnce({ description: 'mocked', model: 'm', provider: LLMProviderType.OPENAI });
+      executeLLMSpy.mockResolvedValueOnce({
+        description: 'mocked',
+        model: 'm',
+        provider: LLMProviderType.OPENAI,
+      });
 
       await provider.generatePRDescription({ templateData });
 
       expect(executeLLMSpy).toHaveBeenCalledWith(
         expect.stringContaining('diff content here'), // Check if DIFF_CONTENT was processed into default template
-        expect.anything()
+        expect.anything(),
       );
       // Check that the processed prompt passed to executeLLMGeneration IS the processed default template
       const processedDefault = provider.publicProcessTemplate(defaultTemplate, templateData);
@@ -217,7 +245,11 @@ describe('BaseLLMProvider Template Processing', () => {
       const customTemplate = 'Custom: {DIFF_CONTENT} from {BRANCH_NAME}';
       const templateData = { DIFF_CONTENT: 'my diff', BRANCH_NAME: 'feat/custom' };
       const options: GenerateDescriptionOptions = { template: customTemplate, templateData };
-      executeLLMSpy.mockResolvedValueOnce({ description: 'mocked', model: 'm', provider: LLMProviderType.OPENAI });
+      executeLLMSpy.mockResolvedValueOnce({
+        description: 'mocked',
+        model: 'm',
+        provider: LLMProviderType.OPENAI,
+      });
 
       await provider.generatePRDescription(options);
 
@@ -229,7 +261,11 @@ describe('BaseLLMProvider Template Processing', () => {
       const template = 'Content: {DIFF_CONTENT}';
       const templateData = { DIFF_CONTENT: 'actual diff' };
       const options: GenerateDescriptionOptions = { template, templateData };
-      executeLLMSpy.mockResolvedValueOnce({ description: 'mocked', model: 'm', provider: LLMProviderType.OPENAI });
+      executeLLMSpy.mockResolvedValueOnce({
+        description: 'mocked',
+        model: 'm',
+        provider: LLMProviderType.OPENAI,
+      });
 
       await provider.generatePRDescription(options);
 
@@ -246,19 +282,23 @@ describe('BaseLLMProvider Template Processing', () => {
         templateData,
         diffSizeLimit,
       };
-      executeLLMSpy.mockResolvedValueOnce({ description: 'mocked', model: 'm', provider: LLMProviderType.OPENAI });
+      executeLLMSpy.mockResolvedValueOnce({
+        description: 'mocked',
+        model: 'm',
+        provider: LLMProviderType.OPENAI,
+      });
 
       const response = await provider.generatePRDescription(options);
 
-      const expectedTruncatedDiff = longDiff.substring(0, diffSizeLimit) + '\n\n[... diff truncated due to size limit ...]';
+      const expectedTruncatedDiff =
+        longDiff.substring(0, diffSizeLimit) + '\n\n[... diff truncated due to size limit ...]';
       expect(response.originalDiffSize).toBe(100);
       expect(response.truncatedDiffSize).toBe(expectedTruncatedDiff.length);
       expect(response.diffSizeTruncated).toBe(true);
 
-      const processedTemplateWithTruncatedDiff = provider.publicProcessTemplate(
-        '{DIFF_CONTENT}',
-        { DIFF_CONTENT: expectedTruncatedDiff }
-      );
+      const processedTemplateWithTruncatedDiff = provider.publicProcessTemplate('{DIFF_CONTENT}', {
+        DIFF_CONTENT: expectedTruncatedDiff,
+      });
       expect(executeLLMSpy).toHaveBeenCalledWith(processedTemplateWithTruncatedDiff, options);
     });
 
@@ -267,25 +307,36 @@ describe('BaseLLMProvider Template Processing', () => {
       // DIFF_CONTENT is missing in templateData
       const templateData = { BRANCH_NAME: 'feat/test' };
       const options: GenerateDescriptionOptions = { template, templateData };
-      executeLLMSpy.mockResolvedValueOnce({ description: 'mocked', model: 'm', provider: LLMProviderType.OPENAI });
+      executeLLMSpy.mockResolvedValueOnce({
+        description: 'mocked',
+        model: 'm',
+        provider: LLMProviderType.OPENAI,
+      });
 
       await provider.generatePRDescription(options);
 
       // processTemplate will receive DIFF_CONTENT: ''
-      const processed = provider.publicProcessTemplate(template, { ...templateData, DIFF_CONTENT: '' });
+      const processed = provider.publicProcessTemplate(template, {
+        ...templateData,
+        DIFF_CONTENT: '',
+      });
       expect(executeLLMSpy).toHaveBeenCalledWith(processed, options);
     });
 
-     it('should call processTemplate with all templateData', async () => {
+    it('should call processTemplate with all templateData', async () => {
       const template = 'Branch: {BRANCH_NAME}, Title: {PULL_REQUEST_TITLE}, Diff: {DIFF_CONTENT}';
       const templateData = {
         BRANCH_NAME: 'feature/test',
         PULL_REQUEST_TITLE: 'My PR',
         DIFF_CONTENT: 'diff details',
-        ADDITIONAL_DATA: 'some other info' // This won't be in the template, but should be in templateData
+        ADDITIONAL_DATA: 'some other info', // This won't be in the template, but should be in templateData
       };
       const options: GenerateDescriptionOptions = { template, templateData };
-      executeLLMSpy.mockResolvedValueOnce({ description: 'mocked', model: 'm', provider: LLMProviderType.OPENAI });
+      executeLLMSpy.mockResolvedValueOnce({
+        description: 'mocked',
+        model: 'm',
+        provider: LLMProviderType.OPENAI,
+      });
 
       const processSpy = jest.spyOn(provider as any, 'processTemplate');
       await provider.generatePRDescription(options);

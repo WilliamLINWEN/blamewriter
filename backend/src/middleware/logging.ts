@@ -10,7 +10,9 @@ import { ApiMetadata } from '../types/api';
 export interface ApiRequest extends Request {
   apiMetadata: ApiMetadata;
   startTime: number;
-  audit: (entry: Omit<AuditLogEntry, 'timestamp' | 'requestId' | 'ipAddress' | 'userAgent'>) => void;
+  audit: (
+    entry: Omit<AuditLogEntry, 'timestamp' | 'requestId' | 'ipAddress' | 'userAgent'>,
+  ) => void;
 }
 
 /**
@@ -24,7 +26,7 @@ const SENSITIVE_FIELDS = [
   'secret',
   'key',
   'authorization',
-  'bearer'
+  'bearer',
 ];
 
 /**
@@ -43,9 +45,7 @@ function sanitizeObject(obj: any, depth = 0): any {
     const sanitized: any = {};
     for (const [key, value] of Object.entries(obj)) {
       const lowerKey = key.toLowerCase();
-      const isSensitive = SENSITIVE_FIELDS.some(field => 
-        lowerKey.includes(field.toLowerCase())
-      );
+      const isSensitive = SENSITIVE_FIELDS.some(field => lowerKey.includes(field.toLowerCase()));
 
       if (isSensitive) {
         if (typeof value === 'string' && value.length > 0) {
@@ -70,9 +70,7 @@ function sanitizeHeaders(headers: any): any {
   const sanitized: any = {};
   for (const [key, value] of Object.entries(headers)) {
     const lowerKey = key.toLowerCase();
-    const isSensitive = SENSITIVE_FIELDS.some(field => 
-      lowerKey.includes(field.toLowerCase())
-    );
+    const isSensitive = SENSITIVE_FIELDS.some(field => lowerKey.includes(field.toLowerCase()));
 
     if (isSensitive) {
       sanitized[key] = '[REDACTED]';
@@ -90,13 +88,13 @@ export function requestLoggingMiddleware() {
   return (req: Request, res: Response, next: NextFunction) => {
     const apiReq = req as ApiRequest;
     apiReq.startTime = Date.now();
-    
+
     // Generate unique request ID
     const requestId = uuidv4();
     apiReq.apiMetadata = {
       version: '2.0.0',
       timestamp: new Date().toISOString(),
-      requestId
+      requestId,
     };
 
     // Log request with sanitized data
@@ -110,12 +108,12 @@ export function requestLoggingMiddleware() {
       query: sanitizedQuery,
       body: Object.keys(req.body).length > 0 ? sanitizedBody : undefined,
       userAgent: req.get('User-Agent'),
-      ip: req.ip || req.connection.remoteAddress
+      ip: req.ip || req.socket.remoteAddress,
     });
 
     // Override res.json to log responses
     const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
+    res.json = function (data: any) {
       const processingTime = Date.now() - apiReq.startTime;
       apiReq.apiMetadata.processingTime = processingTime;
 
@@ -129,16 +127,18 @@ export function requestLoggingMiddleware() {
       }
 
       // Log response (sanitize if needed)
-      const sanitizedResponse = data && typeof data === 'object' ? 
-        sanitizeObject(data) : data;
+      const sanitizedResponse = data && typeof data === 'object' ? sanitizeObject(data) : data;
 
-      console.log(`✅ [${new Date().toISOString()}] ${req.method} ${req.path} - ${res.statusCode}`, {
-        requestId,
-        processingTime: `${processingTime}ms`,
-        statusCode: res.statusCode,
-        responseSize: JSON.stringify(data).length,
-        response: res.statusCode >= 400 ? sanitizedResponse : undefined // Only log error responses
-      });
+      console.log(
+        `✅ [${new Date().toISOString()}] ${req.method} ${req.path} - ${res.statusCode}`,
+        {
+          requestId,
+          processingTime: `${processingTime}ms`,
+          statusCode: res.statusCode,
+          responseSize: JSON.stringify(data).length,
+          response: res.statusCode >= 400 ? sanitizedResponse : undefined, // Only log error responses
+        },
+      );
 
       return originalJson(data);
     };
@@ -174,28 +174,20 @@ export class AuditLogger {
       ...entry,
       // Ensure optional fields are properly handled
       ipAddress: entry.ipAddress || undefined,
-      userAgent: entry.userAgent || undefined
+      userAgent: entry.userAgent || undefined,
     };
 
     // In production, this should go to a secure audit log system
     this.logs.push(auditEntry);
-    
+
     console.log(`🔍 [AUDIT] ${auditEntry.timestamp}`, {
       requestId: auditEntry.requestId,
       action: auditEntry.action,
       resource: auditEntry.resource,
       outcome: auditEntry.outcome,
       userId: auditEntry.userId,
-      details: sanitizeObject(auditEntry.details)
+      details: sanitizeObject(auditEntry.details),
     });
-  }
-
-  static getLogs(): AuditLogEntry[] {
-    return [...this.logs];
-  }
-
-  static clearLogs(): void {
-    this.logs = [];
   }
 }
 
@@ -203,15 +195,17 @@ export class AuditLogger {
  * Middleware to add audit logging capability to requests
  */
 export function auditMiddleware() {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _: Response, next: NextFunction) => {
     const apiReq = req as ApiRequest & { audit: typeof AuditLogger.log };
-    
-    apiReq.audit = (entry: Omit<AuditLogEntry, 'timestamp' | 'requestId' | 'ipAddress' | 'userAgent'>) => {
+
+    apiReq.audit = (
+      entry: Omit<AuditLogEntry, 'timestamp' | 'requestId' | 'ipAddress' | 'userAgent'>,
+    ) => {
       AuditLogger.log({
         ...entry,
         requestId: apiReq.apiMetadata.requestId,
         ipAddress: req.ip || req.connection.remoteAddress || undefined,
-        userAgent: req.get('User-Agent') || undefined
+        userAgent: req.get('User-Agent') || undefined,
       });
     };
 

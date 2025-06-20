@@ -71,20 +71,20 @@ export function validateEnvironmentVariables(): ValidationResult {
   }
 
   if (config.OPENAI_API_KEY && !isValidOpenAIKey(config.OPENAI_API_KEY)) {
-    errors.push(`❌ OPENAI_API_KEY appears to be invalid format (should start with 'sk-')`);
+    errors.push("❌ OPENAI_API_KEY appears to be invalid format (should start with 'sk-')");
   }
 
   // OAuth configuration validation
   if (config.BITBUCKET_OAUTH_REDIRECT_URI && !isValidUrl(config.BITBUCKET_OAUTH_REDIRECT_URI)) {
-    errors.push(`❌ BITBUCKET_OAUTH_REDIRECT_URI must be a valid HTTP/HTTPS URL`);
+    errors.push('❌ BITBUCKET_OAUTH_REDIRECT_URI must be a valid HTTP/HTTPS URL');
   }
 
   if (config.BITBUCKET_OAUTH_CLIENT_ID && config.BITBUCKET_OAUTH_CLIENT_ID.length < 10) {
-    errors.push(`❌ BITBUCKET_OAUTH_CLIENT_ID appears to be too short`);
+    errors.push('❌ BITBUCKET_OAUTH_CLIENT_ID appears to be too short');
   }
 
   if (config.BITBUCKET_OAUTH_CLIENT_SECRET && config.BITBUCKET_OAUTH_CLIENT_SECRET.length < 20) {
-    errors.push(`❌ BITBUCKET_OAUTH_CLIENT_SECRET appears to be too short`);
+    errors.push('❌ BITBUCKET_OAUTH_CLIENT_SECRET appears to be too short');
   }
 
   return {
@@ -149,7 +149,7 @@ function isValidUrl(url: string): boolean {
 export function printValidationResults(result: ValidationResult): void {
   if (result.isValid) {
     console.log('✅ Environment validation passed');
-    console.log(`📊 Configuration loaded:`);
+    console.log('📊 Configuration loaded:');
     console.log(`   - PORT: ${result.config?.PORT}`);
     console.log(`   - NODE_ENV: ${result.config?.NODE_ENV}`);
     console.log(

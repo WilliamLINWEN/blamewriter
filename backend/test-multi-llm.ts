@@ -4,10 +4,7 @@
  */
 
 import dotenv from 'dotenv';
-import { 
-  getProviderFactory,
-  createProvider
-} from './src/services/providers/provider-factory';
+import { getProviderFactory, createProvider } from './src/services/providers/provider-factory';
 import { LLMProviderType } from './src/services/llm-provider';
 
 // Load environment variables
@@ -56,7 +53,7 @@ index 1234567..abcdefg 100644
       // Test generation (optional - costs tokens)
       // const result = await openaiProvider.generatePRDescription(sampleDiff);
       // console.log('✅ OpenAI Generation test passed:', result.description.substring(0, 100) + '...');
-      
+
       console.log('');
     } catch (error: any) {
       console.error('❌ OpenAI Provider test failed:', error.message);
@@ -80,7 +77,7 @@ index 1234567..abcdefg 100644
       // Test connection
       await anthropicProvider.testConnection();
       console.log('✅ Anthropic Connection test passed');
-      
+
       console.log('');
     } catch (error: any) {
       console.error('❌ Anthropic Provider test failed:', error.message);
@@ -104,7 +101,7 @@ index 1234567..abcdefg 100644
       // Test connection
       await xaiProvider.testConnection();
       console.log('✅ xAI Connection test passed');
-      
+
       console.log('');
     } catch (error: any) {
       console.error('❌ xAI Provider test failed:', error.message);
@@ -128,7 +125,7 @@ index 1234567..abcdefg 100644
       // Test connection
       await ollamaProvider.testConnection();
       console.log('✅ Ollama Connection test passed');
-      
+
       console.log('');
     } catch (error: any) {
       console.error('❌ Ollama Provider test failed:', error.message);
@@ -139,7 +136,7 @@ index 1234567..abcdefg 100644
 
   // Test Factory Registry
   console.log('🧪 Testing Provider Factory Registry...');
-  
+
   if (process.env.OPENAI_API_KEY) {
     factory.createAndRegister(
       'test-openai',
@@ -148,7 +145,7 @@ index 1234567..abcdefg 100644
         apiKey: process.env.OPENAI_API_KEY,
         model: 'gpt-3.5-turbo',
       },
-      true // Set as default
+      true, // Set as default
     );
   }
 
@@ -158,7 +155,7 @@ index 1234567..abcdefg 100644
   if (registryKeys.length > 0) {
     const healthResults = await factory.healthCheck();
     console.log('🏥 Provider health check results:', healthResults);
-    
+
     console.log('📊 Provider capabilities:', factory.discoverCapabilities());
   }
 

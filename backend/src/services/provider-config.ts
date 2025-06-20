@@ -3,10 +3,7 @@
  * This demonstrates how to set up multiple providers at application startup
  */
 
-import { 
-  getProviderFactory, 
-  ProviderFactoryConfig 
-} from '../services/providers/provider-factory';
+import { getProviderFactory, ProviderFactoryConfig } from '../services/providers/provider-factory';
 import { LLMProviderType } from '../services/llm-provider';
 
 /**
@@ -77,17 +74,24 @@ export async function initializeProviders(): Promise<void> {
   }
 
   if (providerConfigs.length === 0) {
-    console.warn('⚠️  [Provider Factory] No providers configured. Set environment variables to enable providers.');
+    console.warn(
+      '⚠️  [Provider Factory] No providers configured. Set environment variables to enable providers.',
+    );
     return;
   }
 
   try {
     await factory.initializeProviders(providerConfigs);
-    console.log(`🎉 [Provider Factory] Successfully initialized ${providerConfigs.length} providers`);
-    
+    console.log(
+      `🎉 [Provider Factory] Successfully initialized ${providerConfigs.length} providers`,
+    );
+
     // Log provider capabilities
     const capabilities = factory.discoverCapabilities();
-    console.log('📋 [Provider Factory] Available provider capabilities:', JSON.stringify(capabilities, null, 2));
+    console.log(
+      '📋 [Provider Factory] Available provider capabilities:',
+      JSON.stringify(capabilities, null, 2),
+    );
   } catch (error) {
     console.error('❌ [Provider Factory] Failed to initialize providers:', error);
     throw error;
@@ -101,7 +105,7 @@ export async function checkProviderHealth(): Promise<void> {
   try {
     const factory = getProviderFactory();
     const healthStatus = await factory.healthCheck();
-    
+
     console.log('🏥 [Provider Health] Health check results:');
     for (const [key, status] of Object.entries(healthStatus)) {
       if (status.healthy) {
@@ -120,15 +124,15 @@ export async function checkProviderHealth(): Promise<void> {
  */
 export function getProviderExample() {
   const factory = getProviderFactory();
-  
+
   // Get provider with fallback logic
   try {
     // Try to get preferred provider, fall back to OpenAI, then to default
     const provider = factory.getProviderWithFallback(
-      'openai-default',      // Preferred provider key
-      LLMProviderType.OPENAI // Fallback provider type
+      'openai-default', // Preferred provider key
+      LLMProviderType.OPENAI, // Fallback provider type
     );
-    
+
     console.log(`🤖 [Provider Example] Using provider: ${provider.getProviderType()}`);
     return provider;
   } catch (error) {

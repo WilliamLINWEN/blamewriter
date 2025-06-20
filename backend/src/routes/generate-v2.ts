@@ -1,16 +1,15 @@
 // backend/src/routes/generate-v2.ts
 
 import express from 'express';
-import { 
-  GenerateRequest, 
-  GenerateResponse, 
+import {
+  GenerateRequest,
+  GenerateResponse,
   GenerateMVPRequest,
-  GenerateMVPResponse,
   ApiErrorResponse,
   ValidationResult,
-  ValidationError 
-} from '../types/api';
-import { ApiRequest, AuditLogger } from '../middleware/logging';
+  ValidationError,
+} from '@/types/api';
+import { ApiRequest } from '@/middleware/logging';
 import {
   parseBitbucketPRUrl,
   BitbucketUrlError,
@@ -45,7 +44,7 @@ function validateGenerateRequest(body: any): ValidationResult {
       field: 'prUrl',
       message: 'prUrl is required and must be a string',
       code: 'REQUIRED_FIELD',
-      value: body.prUrl
+      value: body.prUrl,
     });
   }
 
@@ -54,7 +53,7 @@ function validateGenerateRequest(body: any): ValidationResult {
       field: 'bitbucketToken',
       message: 'bitbucketToken is required and must be a string',
       code: 'REQUIRED_FIELD',
-      value: '[REDACTED]'
+      value: '[REDACTED]',
     });
   }
 
@@ -63,7 +62,7 @@ function validateGenerateRequest(body: any): ValidationResult {
       field: 'llmConfig',
       message: 'llmConfig is required and must be an object',
       code: 'REQUIRED_FIELD',
-      value: body.llmConfig
+      value: body.llmConfig,
     });
   } else {
     // Validate llmConfig fields
@@ -72,7 +71,7 @@ function validateGenerateRequest(body: any): ValidationResult {
         field: 'llmConfig.providerId',
         message: 'llmConfig.providerId is required and must be a string',
         code: 'REQUIRED_FIELD',
-        value: body.llmConfig.providerId
+        value: body.llmConfig.providerId,
       });
     }
 
@@ -81,7 +80,7 @@ function validateGenerateRequest(body: any): ValidationResult {
         field: 'llmConfig.modelId',
         message: 'llmConfig.modelId is required and must be a string',
         code: 'REQUIRED_FIELD',
-        value: body.llmConfig.modelId
+        value: body.llmConfig.modelId,
       });
     }
   }
@@ -91,7 +90,7 @@ function validateGenerateRequest(body: any): ValidationResult {
       field: 'template',
       message: 'template is required and must be an object',
       code: 'REQUIRED_FIELD',
-      value: body.template
+      value: body.template,
     });
   } else {
     if (!body.template.content || typeof body.template.content !== 'string') {
@@ -99,7 +98,7 @@ function validateGenerateRequest(body: any): ValidationResult {
         field: 'template.content',
         message: 'template.content is required and must be a string',
         code: 'REQUIRED_FIELD',
-        value: body.template.content
+        value: body.template.content,
       });
     }
   }
@@ -113,14 +112,14 @@ function validateGenerateRequest(body: any): ValidationResult {
         field: 'prUrl',
         message: 'Invalid Bitbucket PR URL format',
         code: 'INVALID_FORMAT',
-        value: body.prUrl
+        value: body.prUrl,
       });
     }
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -135,7 +134,7 @@ function validateMVPRequest(body: any): ValidationResult {
       field: 'prUrl',
       message: 'prUrl is required and must be a string',
       code: 'REQUIRED_FIELD',
-      value: body.prUrl
+      value: body.prUrl,
     });
   }
 
@@ -144,7 +143,7 @@ function validateMVPRequest(body: any): ValidationResult {
       field: 'bitbucketToken',
       message: 'bitbucketToken is required and must be a string',
       code: 'REQUIRED_FIELD',
-      value: '[REDACTED]'
+      value: '[REDACTED]',
     });
   }
 
@@ -157,14 +156,14 @@ function validateMVPRequest(body: any): ValidationResult {
         field: 'prUrl',
         message: 'Invalid Bitbucket PR URL format',
         code: 'INVALID_FORMAT',
-        value: body.prUrl
+        value: body.prUrl,
       });
     }
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -179,7 +178,7 @@ function createErrorResponse(
   category: ApiErrorResponse['error']['category'],
   retryable: boolean = false,
   details?: string,
-  suggestedAction?: string
+  suggestedAction?: string,
 ): ApiErrorResponse {
   return {
     success: false,
@@ -189,18 +188,22 @@ function createErrorResponse(
       details,
       category,
       retryable,
-      suggestedAction
+      suggestedAction,
     },
-    metadata: req.apiMetadata
+    metadata: req.apiMetadata,
   };
 }
 
-function handleValidationErrors(req: ApiRequest, res: express.Response, errors: ValidationError[]): void {
+function handleValidationErrors(
+  req: ApiRequest,
+  res: express.Response,
+  errors: ValidationError[],
+): void {
   req.audit({
     action: 'generate_request_validation',
     resource: 'api/v1/generate',
     outcome: 'failure',
-    details: { validationErrors: errors }
+    details: { validationErrors: errors },
   });
 
   const errorResponse = createErrorResponse(
@@ -210,7 +213,7 @@ function handleValidationErrors(req: ApiRequest, res: express.Response, errors: 
     'validation',
     false,
     `${errors.length} validation error(s)`,
-    'Please check the request format and required fields'
+    'Please check the request format and required fields',
   );
 
   res.status(400).json(errorResponse);
@@ -226,9 +229,11 @@ function handleValidationErrors(req: ApiRequest, res: express.Response, errors: 
  */
 async function handleGenerate(req: express.Request, res: express.Response): Promise<void> {
   const apiReq = req as ApiRequest;
-  
+
   try {
-    console.log(`🚀 [${apiReq.apiMetadata.timestamp}] POST /api/v1/generate - Enhanced request received`);
+    console.log(
+      `🚀 [${apiReq.apiMetadata.timestamp}] POST /api/v1/generate - Enhanced request received`,
+    );
 
     // Validate request
     const validation = validateGenerateRequest(req.body);
@@ -253,7 +258,7 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
           'validation',
           false,
           formatBitbucketUrlError(error),
-          'Please provide a valid Bitbucket pull request URL'
+          'Please provide a valid Bitbucket pull request URL',
         );
         res.status(400).json(errorResponse);
         return;
@@ -270,8 +275,8 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
         llmProvider: generateRequest.llmConfig.providerId,
         model: generateRequest.llmConfig.modelId,
         templateId: generateRequest.template.id,
-        hasCustomEndpoint: !!generateRequest.llmConfig.customEndpoint
-      }
+        hasCustomEndpoint: !!generateRequest.llmConfig.customEndpoint,
+      },
     });
 
     // Create Bitbucket client
@@ -294,7 +299,7 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
           'provider',
           true,
           formatBitbucketServiceError(error),
-          'Please check your Bitbucket token and PR URL'
+          'Please check your Bitbucket token and PR URL',
         );
         res.status(error.statusCode || 500).json(errorResponse);
         return;
@@ -311,7 +316,7 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
         'validation',
         false,
         `Provider '${generateRequest.llmConfig.providerId}' is not yet implemented`,
-        'Please use "openai" as the providerId'
+        'Please use "openai" as the providerId',
       );
       res.status(400).json(errorResponse);
       return;
@@ -325,7 +330,7 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
         'LLM API key is required',
         'validation',
         false,
-        'apiKey field must be provided in llmConfig'
+        'apiKey field must be provided in llmConfig',
       );
       res.status(400).json(errorResponse);
       return;
@@ -338,7 +343,7 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
     let description;
     try {
       console.log('🤖 Generating description with OpenAI...');
-      
+
       // Template processing (basic for now, will be enhanced in 2.3)
       const processedTemplate = generateRequest.template.content
         .replace('{{title}}', prData.title)
@@ -349,15 +354,12 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
         .replace('{{diff}}', prData.diff.diff || 'No diff available')
         .replace('{DIFF_CONTENT}', prData.diff.diff || 'No diff available'); // Support both formats
 
-      const generatedResult = await openaiClient.generatePRDescription(
-        processedTemplate,
-        {
-          model: generateRequest.llmConfig.modelId,
-          maxTokens: 1000,
-          temperature: 0.7
-        }
-      );
-      
+      const generatedResult = await openaiClient.generatePRDescription(processedTemplate, {
+        model: generateRequest.llmConfig.modelId,
+        maxTokens: 1000,
+        temperature: 0.7,
+      });
+
       description = generatedResult.description;
       console.log('✅ Description generated successfully');
     } catch (error) {
@@ -369,7 +371,7 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
           'provider',
           true,
           formatOpenAIServiceError(error),
-          'Please check your API key and try again'
+          'Please check your API key and try again',
         );
         res.status(error.statusCode || 500).json(errorResponse);
         return;
@@ -381,15 +383,15 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
     // Note: Detailed stats parsing will be implemented in Phase 2.4
     const diffStats = {
       totalFiles: 0, // Will be calculated from diff parsing
-      addedLines: 0, // Will be calculated from diff parsing  
+      addedLines: 0, // Will be calculated from diff parsing
       deletedLines: 0, // Will be calculated from diff parsing
       modifiedFiles: 0, // Will be calculated from diff parsing
       fileTypes: {},
       largestFile: {
         name: 'Unknown',
-        changes: 0
+        changes: 0,
       },
-      processingMethod: 'direct' as const
+      processingMethod: 'direct' as const,
     };
 
     // Create successful response
@@ -407,16 +409,16 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
             author: prData.author?.display_name,
             source_branch: prData.source?.branch?.name,
             destination_branch: prData.destination?.branch?.name,
-            diff: prData.diff.diff
-          }
+            diff: prData.diff.diff,
+          },
         },
         llmProvider: {
           name: 'OpenAI',
           model: generateRequest.llmConfig.modelId,
           tokensUsed: undefined, // Will be populated when provider returns this info
-          cost: undefined
-        }
-      }
+          cost: undefined,
+        },
+      },
     };
 
     // Audit successful generation
@@ -426,12 +428,11 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
       outcome: 'success',
       details: {
         descriptionLength: description.length,
-        processingTime: apiReq.apiMetadata.processingTime
-      }
+        processingTime: apiReq.apiMetadata.processingTime,
+      },
     });
 
     res.status(200).json(response);
-
   } catch (error) {
     console.error('❌ Unexpected error in generate endpoint:', error);
 
@@ -440,8 +441,8 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
       resource: 'api/v1/generate',
       outcome: 'error',
       details: {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
     });
 
     const errorResponse = createErrorResponse(
@@ -451,7 +452,7 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
       'internal',
       true,
       error instanceof Error ? error.message : 'Unknown error',
-      'Please try again later or contact support if the issue persists'
+      'Please try again later or contact support if the issue persists',
     );
 
     res.status(500).json(errorResponse);
@@ -464,9 +465,11 @@ async function handleGenerate(req: express.Request, res: express.Response): Prom
  */
 async function handleGenerateMVP(req: express.Request, res: express.Response): Promise<void> {
   const apiReq = req as ApiRequest;
-  
+
   try {
-    console.log(`🚀 [${apiReq.apiMetadata.timestamp}] POST /api/v1/generate-mvp - MVP request received (backward compatibility)`);
+    console.log(
+      `🚀 [${apiReq.apiMetadata.timestamp}] POST /api/v1/generate-mvp - MVP request received (backward compatibility)`,
+    );
 
     // Validate MVP request
     const validation = validateMVPRequest(req.body);
@@ -485,18 +488,18 @@ async function handleGenerateMVP(req: express.Request, res: express.Response): P
         providerId: mvpRequest.llmConfig?.providerId || 'openai',
         modelId: mvpRequest.llmConfig?.modelId || 'gpt-3.5-turbo',
         apiKey: mvpRequest.llmConfig?.apiKey,
-        customEndpoint: mvpRequest.llmConfig?.customEndpoint
+        customEndpoint: mvpRequest.llmConfig?.customEndpoint,
       },
       template: {
-        content: mvpRequest.templateContent || 
-          'Generate a professional PR description for this pull request:\n\nTitle: {{title}}\nDescription: {{description}}\nAuthor: {{author}}\nSource Branch: {{source_branch}}\nDestination Branch: {{destination_branch}}\n\nDiff Summary:\n{{diff}}'
-      }
+        content:
+          mvpRequest.templateContent ||
+          'Generate a professional PR description for this pull request:\n\nTitle: {{title}}\nDescription: {{description}}\nAuthor: {{author}}\nSource Branch: {{source_branch}}\nDestination Branch: {{destination_branch}}\n\nDiff Summary:\n{{diff}}',
+      },
     };
 
     // Use the same logic as enhanced endpoint
     req.body = enhancedRequest;
     await handleGenerate(req, res);
-
   } catch (error) {
     console.error('❌ Unexpected error in MVP endpoint:', error);
 
@@ -506,7 +509,7 @@ async function handleGenerateMVP(req: express.Request, res: express.Response): P
       'An unexpected error occurred',
       'internal',
       true,
-      error instanceof Error ? error.message : 'Unknown error'
+      error instanceof Error ? error.message : 'Unknown error',
     );
 
     res.status(500).json(errorResponse);
