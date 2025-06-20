@@ -5,8 +5,8 @@
  */
 
 export const OAUTH_CONFIG = {
-  CLIENT_ID: 'qb2UuSVYVgHrsfPkDb',
-  CLIENT_SECRET: 'wCaPGqAaswYe6Z3QXfMsFJb632n67nQr',
+  CLIENT_ID: 'your_client_id_here',
+  CLIENT_SECRET: 'your_client_secret_here',
   AUTH_URL: 'https://bitbucket.org/site/oauth2/authorize',
   TOKEN_URL: 'https://bitbucket.org/site/oauth2/access_token',
   REDIRECT_URL: `https://${chrome.runtime.id}.chromiumapp.org/callback`,
