@@ -137,21 +137,6 @@ function fillDescriptionIntoEditor(description: string): void {
 // ================================= CORE LOGIC =================================
 
 /**
- * 從當前 URL 解析出 PR 資訊。
- * @returns {PrInfo | null} 如果成功解析則返回 PrInfo 物件，否則返回 null。
- */
-// function getPrInfoFromUrl(): PrInfo | null {
-//   const match = window.location.href.match(prInfoRegex);
-//   if (match && match.groups) {
-//     const { workspace, repoSlug, prId } = match.groups;
-//     if (workspace && repoSlug && prId) {
-//       return { workspace, repoSlug, prId };
-//     }
-//   }
-//   return null;
-// }
-
-/**
  * 停止並清理 MutationObserver。
  * 這是為了在使用者離開 PR 頁面時，避免不必要的效能損耗。
  */
@@ -160,6 +145,16 @@ function stopDescriptionObserver(): void {
     prDescriptionObserver.disconnect();
     prDescriptionObserver = null;
     console.log('[BPR-Helper] 已停止監聽描述編輯器。');
+  }
+  // 清理相關狀態
+  if (currentEditorElement) {
+    currentEditorElement = null;
+    console.log('[BPR-Helper] 已清理編輯器元素引用。');
+  }
+
+  if (aiButton) {
+    aiButton = null;
+    console.log('[BPR-Helper] 已清理 AI 按鈕引用。');
   }
 }
 
@@ -192,8 +187,13 @@ function startDescriptionObserver(): void {
     const element = document.querySelector(editorSelector);
     if (element) {
       handleEditorAppearance(element as HTMLElement);
-      // 找到後就停止監聽，任務完成
-      // stopDescriptionObserver();
+    } else {
+      // 編輯器消失了，清理當前狀態
+      if (currentEditorElement) {
+        console.log('[BPR-Helper] 編輯器已關閉');
+        currentEditorElement = null;
+        aiButton = null; // AI 按鈕也會隨編輯器一起消失
+      }
     }
   };
 
@@ -325,16 +325,13 @@ function initializeOrCleanup(): void {
   // 檢查目前是否在 PR 頁面
   if (prPageRegex.test(window.location.pathname)) {
     console.log('[BPR-Helper] Bitbucket PR 頁面已偵測。');
-    // const prInfo = getPrInfoFromUrl();
-    // if (prInfo) {
-    //   console.log('[BPR-Helper] PR 資訊:', prInfo);
-    //   injectCustomUI(prInfo);
     startDescriptionObserver(); // 在 PR 頁面，開始監聽編輯器
-    // } else {
-    //   console.error('[BPR-Helper] 無法從 URL 中解析 PR 資訊。');
-    // }
   } else {
     console.log('[BPR-Helper] 目前不是 Bitbucket PR 頁面。');
+    // 不在 PR 頁面時，停止監聽並清理所有狀態
+    stopDescriptionObserver();
+    currentEditorElement = null;
+    aiButton = null;
   }
 }
 
