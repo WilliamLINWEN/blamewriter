@@ -219,6 +219,10 @@ router.post('/generate', async (req: express.Request, res: express.Response): Pr
   console.log('📝 [Generate V2] Request body:', JSON.stringify(req.body, null, 2));
 
   try {
+    // passing selectedModelId to modelId
+    if (req.body.llmConfig && req.body.llmConfig.selectedModelId) {
+      req.body.llmConfig.modelId = req.body.llmConfig.selectedModelId;
+    }
     // Validate request
     const validation = validateGenerateRequest(req.body);
     if (!validation.isValid) {

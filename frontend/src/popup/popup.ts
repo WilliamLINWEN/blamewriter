@@ -2,24 +2,13 @@
 
 import { Template, UserLLMConfig, LLMProvider as LLMProviderDef } from '../common/storage_schema';
 import { getFromStorage, updateTemplateUsageStats } from '../common/storage_utils';
+import { GenerateDescriptionRequest } from '../common/message';
 
 interface BitbucketPRInfo {
   workspace: string;
   repo: string;
   prId: string;
   fullUrl: string;
-}
-
-interface GenerateRequest {
-  action: 'generate';
-  prUrl: string;
-  templateContent: string;
-  llmConfig: {
-    providerId: string;
-    modelId: string;
-    apiKey: string | null;
-    customEndpoint: string | null;
-  };
 }
 
 interface GenerateResponse {
@@ -491,13 +480,13 @@ class PopupController {
         return;
       }
 
-      const request: GenerateRequest = {
-        action: 'generate',
+      const request: GenerateDescriptionRequest = {
+        action: 'generate_description',
         prUrl: currentUrl,
         templateContent: selectedTemplate.content,
         llmConfig: {
           providerId: this.currentUserLLMConfig.providerId!,
-          modelId: this.currentUserLLMConfig.selectedModelId!,
+          selectedModelId: this.currentUserLLMConfig.selectedModelId!,
           customEndpoint: this.currentUserLLMConfig.customEndpoint,
           apiKey: this.currentUserLLMConfig.apiKey || null,
         },
@@ -559,8 +548,9 @@ class PopupController {
         id: 'ollama',
         name: 'Ollama (Local)',
         models: [
-          { id: 'llama3', name: 'Llama 3 (default)' },
-          { id: 'codellama', name: 'CodeLlama' },
+          { id: 'llama3:8b-instruct-q4_0', name: 'Llama 3 (default)' },
+          { id: 'mistral:latest', name: 'mistral:latest' },
+          { id: 'deepseek-r1:8b', name: 'deepseek-r1:8b' },
         ],
         requiresCustomEndpoint: true,
         requiresApiKey: false,

@@ -10,6 +10,13 @@ import {
   saveOAuthState,
   getAndClearOAuthState,
 } from '../common/oauth_storage';
+import {
+  GetInitialDataResponse,
+  GenerateDescriptionRequest,
+  GetInitialDataRequest,
+} from '../common/message';
+import { getFromStorage } from '../common/storage_utils';
+import { UserLLMConfig } from '../common/storage_schema';
 
 interface GenerateRequest {
   action: 'generate';
@@ -35,12 +42,7 @@ interface ApiRequestBody {
   template: {
     content: string;
   };
-  llmConfig: {
-    providerId: string;
-    modelId: string;
-    apiKey: string | null; // Optional - used for non-OAuth providers
-    customEndpoint: string | null;
-  };
+  llmConfig: UserLLMConfig;
 }
 
 interface ApiResponseBody {
@@ -115,15 +117,22 @@ class BackgroundService {
   }
 
   private async handleMessage(
-    request: GenerateRequest | OAuthRequest | AuthenticateRequest,
+    request:
+      | GenerateRequest
+      | OAuthRequest
+      | AuthenticateRequest
+      | GenerateDescriptionRequest
+      | GetInitialDataRequest,
     sender: chrome.runtime.MessageSender,
-    sendResponse: (response: GenerateResponse | OAuthResponse | AuthenticateResponse) => void,
+    sendResponse: (
+      response: GenerateResponse | OAuthResponse | AuthenticateResponse | GetInitialDataResponse,
+    ) => void,
   ): Promise<void> {
     console.log('Received message:', request);
 
     try {
-      if (request.action === 'generate') {
-        const response = await this.handleGenerateRequest(request as GenerateRequest);
+      if (request.action === 'generate_description') {
+        const response = await this.handleGenerateRequest(request as GenerateDescriptionRequest);
         console.log('Sending response:', response);
         sendResponse(response);
       } else if (request.action === 'oauth_authenticate') {
@@ -138,6 +147,9 @@ class BackgroundService {
       } else if (request.action === 'authenticate') {
         const response = await this.handleAuthenticate();
         sendResponse(response);
+      } else if (request.action === 'get_initial_data_for_content_script') {
+        const response = await this.handleGetInitialData();
+        sendResponse(response);
       } else {
         console.warn('Unknown action:', request.action);
         sendResponse({ error: 'Unknown action' });
@@ -148,7 +160,9 @@ class BackgroundService {
     }
   }
 
-  private async handleGenerateRequest(request: GenerateRequest): Promise<GenerateResponse> {
+  private async handleGenerateRequest(
+    request: GenerateDescriptionRequest,
+  ): Promise<GenerateResponse> {
     // Validate request parameters
     const validationError = this.validateGenerateRequest(request);
     if (validationError) {
@@ -179,7 +193,41 @@ class BackgroundService {
     }
   }
 
-  private validateGenerateRequest(request: GenerateRequest): string | null {
+  private async handleGetInitialData(): Promise<GetInitialDataResponse> {
+    try {
+      // 1. 檢查 OAuth 狀態
+      const isAuthenticated = await isOAuthTokenValid();
+
+      // 2. 獲取模板 (只拿第一個)
+      const templates = await getFromStorage('templates', []);
+      const firstTemplate = templates[0] ?? null;
+
+      // 3. 獲取 LLM 設定
+      // 注意: popup.ts 中有自動選擇第一個 provider/model 的邏輯，這裡直接讀取儲存的值
+      const userLLMConfig = await getFromStorage('userLLMConfig', {
+        providerId: null,
+        selectedModelId: null,
+        apiKey: null,
+        customEndpoint: null,
+      });
+
+      return {
+        isAuthenticated,
+        firstTemplate,
+        userLLMConfig,
+      };
+    } catch (error) {
+      console.error('[BPR-Helper] Background: Error getting initial data:', error);
+      return {
+        isAuthenticated: false,
+        firstTemplate: null,
+        userLLMConfig: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  private validateGenerateRequest(request: GenerateDescriptionRequest): string | null {
     if (!request.prUrl) {
       return 'URL is required';
     }
@@ -199,12 +247,7 @@ class BackgroundService {
     prUrl: string,
     bitbucketToken: string,
     templateContent: string,
-    llmConfig: {
-      providerId: string;
-      modelId: string;
-      apiKey: string | null; // Optional - used for non-OAuth providers
-      customEndpoint: string | null;
-    },
+    llmConfig: UserLLMConfig,
   ): Promise<Response> {
     const requestBody: ApiRequestBody = {
       prUrl: prUrl,
