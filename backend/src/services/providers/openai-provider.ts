@@ -430,27 +430,77 @@ export class OpenAIProvider extends BaseLLMProvider {
   }
 
   // Added in Phase 1 to satisfy abstract class requirement
+  // Implementation updated in Phase 2.1
   protected async *executeStreamingLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
   ): AsyncGenerator<StreamChunk, void, unknown> {
-    // This is a placeholder. Actual implementation will be in Phase 2.
-    // For now, we can make it explicit that it's not implemented.
-    console.error(
-      'executeStreamingLLMGeneration is not implemented for OpenAIProvider yet.',
-      prompt,
-      options,
-    );
-    yield {
-      type: 'error',
-      data: {
-        message: 'Streaming not yet implemented for OpenAIProvider.',
-        code: 'NOT_IMPLEMENTED',
-      },
-      timestamp: new Date().toISOString(),
-    };
-    // To make it a valid async generator, ensure it completes.
-    return;
+    const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options }; // Ensure DEFAULT_GENERATION_OPTIONS is accessible or defined
+
+    // Update client for streaming
+    const streamingClient = new ChatOpenAI({
+      openAIApiKey: this.openaiConfig.apiKey,
+      modelName: opts.model || this.openaiConfig.model || 'gpt-3.5-turbo', // Ensure modelName is used if API expects it, or model
+      temperature: opts.temperature ?? (this.openaiConfig as any).temperature ?? 0.7,
+      maxTokens: opts.maxTokens,
+      streaming: true, // Enable streaming
+      ...(this.openaiConfig.timeout && { timeout: this.openaiConfig.timeout }),
+      ...(this.openaiConfig.organizationId && {
+        organization: this.openaiConfig.organizationId,
+      }),
+      // Ensure other relevant properties from this.client are carried over if necessary
+    });
+
+    let accumulatedContent = '';
+    let tokenCount = 0;
+
+    try {
+      const stream = await streamingClient.stream([new HumanMessage(prompt)]);
+
+      for await (const chunk of stream) {
+        if (chunk.content) {
+          const content = chunk.content as string;
+          accumulatedContent += content;
+          tokenCount++; // This counts chunks, not necessarily tokens. For actual token count, specific API response might be needed.
+
+          yield {
+            type: 'content',
+            data: {
+              chunk: content,
+              accumulated: accumulatedContent,
+              tokenCount: tokenCount, // Placeholder for actual token count if available
+            },
+            timestamp: new Date().toISOString(),
+          };
+        }
+      }
+
+      // Send final metadata/completion information
+      yield {
+        type: 'complete',
+        data: {
+          totalTokens: tokenCount, // Placeholder, see above
+          finalContent: accumulatedContent,
+          model: opts.model || this.openaiConfig.model || 'gpt-3.5-turbo',
+          provider: LLMProviderType.OPENAI,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      console.error('❌ [OpenAI Provider] Streaming generation failed:', error);
+      // Transform and yield an error chunk
+      const transformedError = this.transformError(error); // Assuming this.transformError exists and is appropriate
+      yield {
+        type: 'error',
+        data: {
+          error: transformedError, // Send the structured error
+          provider: LLMProviderType.OPENAI,
+          message: transformedError.message, // Include a message for easier debugging
+          code: transformedError.code,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 }
 

@@ -395,25 +395,71 @@ export class AnthropicProvider extends BaseLLMProvider {
   }
 
   // Added in Phase 1 to satisfy abstract class requirement
+  // Implementation updated in Phase 2.2
   protected async *executeStreamingLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
   ): AsyncGenerator<StreamChunk, void, unknown> {
-    // This is a placeholder. Actual implementation will be in Phase 2.
-    console.error(
-      'executeStreamingLLMGeneration is not implemented for AnthropicProvider yet.',
-      prompt,
-      options,
-    );
-    yield {
-      type: 'error',
-      data: {
-        message: 'Streaming not yet implemented for AnthropicProvider.',
-        code: 'NOT_IMPLEMENTED',
-      },
-      timestamp: new Date().toISOString(),
-    };
-    return;
+    const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
+
+    const streamingClient = new ChatAnthropic({
+      anthropicApiKey: this.anthropicConfig.apiKey,
+      modelName: opts.model || this.anthropicConfig.model || 'claude-3-sonnet-20240229', // Ensure modelName or model based on API
+      temperature: opts.temperature ?? (this.anthropicConfig as any).temperature ?? 0.7,
+      maxTokens: opts.maxTokens, // Langchain calls it maxTokens
+      streaming: true,
+      maxRetries: this.anthropicConfig.maxRetries || 3,
+      ...(this.anthropicConfig.baseUrl && { baseURL: this.anthropicConfig.baseUrl }),
+    });
+
+    let accumulatedContent = '';
+    let tokenCount = 0; // Similar to OpenAI, this will be chunk count unless API provides more detail
+
+    try {
+      const stream = await streamingClient.stream([new HumanMessage(prompt)]);
+
+      for await (const chunk of stream) {
+        if (chunk.content) {
+          const content = chunk.content as string;
+          accumulatedContent += content;
+          tokenCount++;
+
+          yield {
+            type: 'content',
+            data: {
+              chunk: content,
+              accumulated: accumulatedContent,
+              tokenCount: tokenCount,
+            },
+            timestamp: new Date().toISOString(),
+          };
+        }
+      }
+
+      yield {
+        type: 'complete',
+        data: {
+          totalTokens: tokenCount,
+          finalContent: accumulatedContent,
+          model: opts.model || this.anthropicConfig.model || 'claude-3-sonnet-20240229',
+          provider: LLMProviderType.ANTHROPIC,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      console.error('❌ [Anthropic Provider] Streaming generation failed:', error);
+      const transformedError = this.transformError(error);
+      yield {
+        type: 'error',
+        data: {
+          error: transformedError,
+          provider: LLMProviderType.ANTHROPIC,
+          message: transformedError.message,
+          code: transformedError.code,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 }
 

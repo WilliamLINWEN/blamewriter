@@ -475,25 +475,126 @@ export class XAIProvider extends BaseLLMProvider {
   }
 
   // Added in Phase 1 to satisfy abstract class requirement
+  // Implementation updated in Phase 2.3
   protected async *executeStreamingLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
   ): AsyncGenerator<StreamChunk, void, unknown> {
-    // This is a placeholder. Actual implementation will be in Phase 2.
-    console.error(
-      'executeStreamingLLMGeneration is not implemented for XAIProvider yet.',
-      prompt,
-      options,
-    );
-    yield {
-      type: 'error',
-      data: {
-        message: 'Streaming not yet implemented for XAIProvider.',
-        code: 'NOT_IMPLEMENTED',
-      },
-      timestamp: new Date().toISOString(),
+    const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
+    const requestPayload: XAICompletionRequest = {
+      model: opts.model || this.xaiConfig.model || 'grok-beta',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: opts.maxTokens,
+      temperature: opts.temperature,
+      stream: true, // Enable streaming
     };
-    return;
+
+    let accumulatedContent = '';
+    let tokenCount = 0; // Chunk count
+
+    try {
+      const response = await this.client.post<NodeJS.ReadableStream>(
+        '/chat/completions',
+        requestPayload,
+        {
+          responseType: 'stream',
+        },
+      );
+
+      // Bridge Node.js stream to async generator
+      const stream = response.data;
+      let buffer = '';
+
+      for await (const chunk of stream) {
+        buffer += chunk.toString();
+        let eolIndex;
+
+        // Process buffer line by line
+        while ((eolIndex = buffer.indexOf('\n\n')) >= 0) {
+          const line = buffer.substring(0, eolIndex).trim();
+          buffer = buffer.substring(eolIndex + 2); // Consume the line and the double newline
+
+          if (line.startsWith('event: ')) {
+            // Skip event lines for now, or handle if needed
+            continue;
+          }
+          if (line.startsWith('data: ')) {
+            const jsonData = line.substring(5).trim();
+            if (jsonData === '[DONE]') {
+              yield {
+                type: 'complete',
+                data: {
+                  totalTokens: tokenCount,
+                  finalContent: accumulatedContent,
+                  model: opts.model || this.xaiConfig.model || 'grok-beta',
+                  provider: LLMProviderType.XAI,
+                },
+                timestamp: new Date().toISOString(),
+              };
+              return; // End of stream
+            }
+            try {
+              const parsed = JSON.parse(jsonData);
+              const contentDelta = parsed.choices?.[0]?.delta?.content;
+
+              if (contentDelta) {
+                accumulatedContent += contentDelta;
+                tokenCount++;
+                yield {
+                  type: 'content',
+                  data: {
+                    chunk: contentDelta,
+                    accumulated: accumulatedContent,
+                    tokenCount: tokenCount,
+                  },
+                  timestamp: new Date().toISOString(),
+                };
+              }
+              // Handle other potential data in the SSE message if necessary
+              // For example, xAI might send metadata or usage stats in stream.
+              // if (parsed.usage) { /* yield metadata chunk */ }
+            } catch (parseError: any) {
+              console.warn(
+                '⚠️ [xAI Provider] Failed to parse SSE JSON data:',
+                jsonData,
+                parseError,
+              );
+              // Optionally yield a specific parse error chunk
+              yield {
+                type: 'error',
+                data: {
+                  message: `Failed to parse streaming data from xAI: ${parseError.message}`,
+                  code: 'STREAM_PARSE_ERROR',
+                  provider: LLMProviderType.XAI,
+                  originalData: jsonData, // Include problematic data for debugging
+                },
+                timestamp: new Date().toISOString(),
+              };
+            }
+          }
+        }
+      }
+      // If stream ends without a [DONE] message but buffer might have content
+      if (buffer.trim().startsWith('data: ')) {
+        // Process remaining buffer content if any meaningful data might be there
+        // This part is tricky and depends on how xAI terminates its streams.
+        // For now, assuming [DONE] is the reliable terminator.
+        console.warn('⚠️ [xAI Provider] Stream ended with unprocessed buffer content:', buffer);
+      }
+    } catch (error: any) {
+      console.error('❌ [xAI Provider] Streaming generation failed:', error);
+      const transformedError = this.transformError(error); // Ensure transformError handles stream-related errors
+      yield {
+        type: 'error',
+        data: {
+          error: transformedError,
+          provider: LLMProviderType.XAI,
+          message: transformedError.message,
+          code: transformedError.code,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 }
 

@@ -429,25 +429,75 @@ export class OllamaProvider extends BaseLLMProvider {
   }
 
   // Added in Phase 1 to satisfy abstract class requirement
+  // Implementation updated in Phase 2.4
   protected async *executeStreamingLLMGeneration(
     prompt: string,
     options?: GenerateDescriptionOptions,
   ): AsyncGenerator<StreamChunk, void, unknown> {
-    // This is a placeholder. Actual implementation will be in Phase 2.
-    console.error(
-      'executeStreamingLLMGeneration is not implemented for OllamaProvider yet.',
-      prompt,
-      options,
-    );
-    yield {
-      type: 'error',
-      data: {
-        message: 'Streaming not yet implemented for OllamaProvider.',
-        code: 'NOT_IMPLEMENTED',
-      },
-      timestamp: new Date().toISOString(),
-    };
-    return;
+    const opts = { ...DEFAULT_GENERATION_OPTIONS, ...options };
+
+    // Note: LangChain's Ollama client might handle streaming implicitly via the .stream() method
+    // rather than a `streaming: true` constructor flag. The spec was a bit ambiguous.
+    // The `Ollama` class from `@langchain/ollama` is used.
+    const streamingClient = new Ollama({
+      baseUrl: this.ollamaConfig.baseUrl || 'http://localhost:11434',
+      model: opts.model || this.ollamaConfig.model || 'llama2',
+      temperature: opts.temperature ?? (this.ollamaConfig as any).temperature ?? 0.7,
+      numCtx: opts.maxTokens, // Ollama uses numCtx for context window/max tokens
+      // Langchain's Ollama doesn't seem to have an explicit `streaming: true` in constructor.
+      // The .stream() method itself implies streaming.
+      ...(this.ollamaConfig.timeout && { requestOptions: { timeout: this.ollamaConfig.timeout } }),
+    });
+
+    let accumulatedContent = '';
+    let tokenCount = 0; // Chunk count
+
+    try {
+      // The stream method in Langchain's Ollama client directly returns an AsyncIterable<string>
+      const stream = await streamingClient.stream(prompt);
+
+      for await (const chunkString of stream) {
+        // Each chunkString is a piece of the generated text
+        if (chunkString) {
+          accumulatedContent += chunkString;
+          tokenCount++; // Counting string chunks
+
+          yield {
+            type: 'content',
+            data: {
+              chunk: chunkString,
+              accumulated: accumulatedContent,
+              tokenCount: tokenCount,
+            },
+            timestamp: new Date().toISOString(),
+          };
+        }
+      }
+
+      yield {
+        type: 'complete',
+        data: {
+          totalTokens: tokenCount, // Still chunk count
+          finalContent: accumulatedContent,
+          model: opts.model || this.ollamaConfig.model || 'llama2',
+          provider: LLMProviderType.OLLAMA,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      console.error('❌ [Ollama Provider] Streaming generation failed:', error);
+      const transformedError = this.transformError(error);
+      yield {
+        type: 'error',
+        data: {
+          error: transformedError,
+          provider: LLMProviderType.OLLAMA,
+          message: transformedError.message,
+          code: transformedError.code,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 }
 
