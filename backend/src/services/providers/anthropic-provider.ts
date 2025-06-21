@@ -13,6 +13,7 @@ import {
   ProviderCapabilities,
   LLMProviderError,
   LLMProviderErrorCode,
+  StreamChunk, // Added for streaming placeholder
 } from '../llm-provider';
 
 /**
@@ -391,6 +392,28 @@ export class AnthropicProvider extends BaseLLMProvider {
       undefined,
       error,
     );
+  }
+
+  // Added in Phase 1 to satisfy abstract class requirement
+  protected async *executeStreamingLLMGeneration(
+    prompt: string,
+    options?: GenerateDescriptionOptions,
+  ): AsyncGenerator<StreamChunk, void, unknown> {
+    // This is a placeholder. Actual implementation will be in Phase 2.
+    console.error(
+      'executeStreamingLLMGeneration is not implemented for AnthropicProvider yet.',
+      prompt,
+      options,
+    );
+    yield {
+      type: 'error',
+      data: {
+        message: 'Streaming not yet implemented for AnthropicProvider.',
+        code: 'NOT_IMPLEMENTED',
+      },
+      timestamp: new Date().toISOString(),
+    };
+    return;
   }
 }
 

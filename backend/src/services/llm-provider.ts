@@ -113,6 +113,14 @@ export class LLMProviderError extends Error {
 /**
  * Abstract base class for all LLM providers
  */
+
+// Added for streaming
+export interface StreamChunk {
+  type: 'metadata' | 'content' | 'complete' | 'error';
+  data: any;
+  timestamp?: string;
+}
+
 export abstract class BaseLLMProvider {
   protected config: LLMProviderConfig;
   protected providerType: LLMProviderType;
@@ -184,6 +192,74 @@ export abstract class BaseLLMProvider {
   ): Promise<
     Omit<GeneratedDescription, 'diffSizeTruncated' | 'originalDiffSize' | 'truncatedDiffSize'>
   >;
+
+  /**
+   * Stream-enabled PR description generation
+   */
+  async *generatePRDescriptionStream(
+    diffContent: string, // Diff content is passed directly for streaming
+    options: GenerateDescriptionOptions = {},
+  ): AsyncGenerator<StreamChunk, void, unknown> {
+    const opts = { ...this.getDefaultGenerationOptions(), ...options }; // Assuming getDefaultGenerationOptions exists or will be added
+
+    // Truncate diff if necessary
+    const { truncated: processedDiff, wasTruncated } = this.truncateDiff(
+      diffContent,
+      opts.diffSizeLimit || 100000, // Default limit if not provided
+    );
+
+    if (wasTruncated) {
+      yield {
+        type: 'metadata',
+        data: {
+          diffTruncated: true,
+          originalSize: diffContent.length,
+          truncatedSize: processedDiff.length,
+        },
+      };
+    }
+
+    // Process template
+    const template = opts.template || this.getDefaultPromptTemplate();
+
+    // For streaming, templateData might be simpler or constructed differently.
+    // Assuming DIFF_CONTENT is the primary dynamic part for the prompt in streaming.
+    const finalTemplateData = { ...(opts.templateData || {}), DIFF_CONTENT: processedDiff };
+    const prompt: string = this.processTemplate(template, finalTemplateData);
+
+    yield {
+      type: 'metadata',
+      data: {
+        promptGenerated: true,
+        promptLength: prompt.length,
+        model: opts.model || this.config.model || 'default', // Fallback model
+      },
+    };
+
+    // Stream the actual LLM generation
+    yield* this.executeStreamingLLMGeneration(prompt, options);
+  }
+
+  /**
+   * Abstract method for streaming LLM generation
+   * Each provider must implement this
+   */
+  protected abstract executeStreamingLLMGeneration(
+    prompt: string,
+    options?: GenerateDescriptionOptions,
+  ): AsyncGenerator<StreamChunk, void, unknown>;
+
+  /**
+   * Gets default generation options.
+   * Providers can override this to set their own defaults.
+   */
+  protected getDefaultGenerationOptions(): Partial<GenerateDescriptionOptions> {
+    return {
+      maxTokens: 2048, // Default max tokens
+      temperature: 0.7, // Default temperature
+      diffSizeLimit: 100000, // Default diff size limit
+    };
+  }
 
   /**
    * Test the connection to the LLM provider
