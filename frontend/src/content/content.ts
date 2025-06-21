@@ -97,15 +97,41 @@ function fillDescriptionIntoEditor(description: string): void {
     console.error('[BPR-Helper] Editor element not found when trying to fill description.');
     return;
   }
+
+  // 1️⃣ Focus & reset the editor
   currentEditorElement.focus();
   currentEditorElement.innerHTML = '';
-  // Using insertHTML is a robust way to add formatted content to a contenteditable div
-  document.execCommand(
-    'insertHTML',
-    false,
-    `<p>${description.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`,
-  );
-  console.log('[BPR-Helper] Description successfully filled into the editor.');
+
+  // 2️⃣ Build the HTML you want to insert
+  const html = `<p>${description
+    .replace(/\n\n/g, '</p><p>') // two line-feeds → new paragraph
+    .replace(/\n/g, '<br>')}</p>`; // single line-feed → <br>
+
+  // 3️⃣ Obtain the current Selection (there is always exactly one per document)
+  const selection = window.getSelection();
+  if (!selection) {
+    console.error('[BPR-Helper] Unable to obtain window selection.');
+    return;
+  }
+
+  // 4️⃣ Position a Range at the start of the editable element
+  selection.removeAllRanges(); // clear previous ranges
+  const range = document.createRange();
+  range.selectNodeContents(currentEditorElement); // select entire contents
+  range.collapse(true); // collapse to the start
+  selection.addRange(range);
+
+  // 5️⃣ Convert the HTML string to a DocumentFragment and insert it
+  const fragment = range.createContextualFragment(html); // parses in the right context
+  range.insertNode(fragment);
+
+  // 6️⃣ Move the caret to the end of the inserted content (optional but user-friendly)
+  selection.removeAllRanges();
+  range.selectNodeContents(currentEditorElement);
+  range.collapse(false); // collapse to the end
+  selection.addRange(range);
+
+  console.log('[BPR-Helper] Description successfully filled into the editor (Range API).');
 }
 
 // ================================= CORE LOGIC =================================
