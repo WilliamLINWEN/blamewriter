@@ -73,6 +73,7 @@ export class OllamaProvider extends BaseLLMProvider {
         'Ollama model name is required and cannot be empty',
       );
     }
+    console.log(`🔧 [Ollama Provider] Config: ${mergedConfig}`);
 
     // Initialize LangChain Ollama client
     this.client = new Ollama({

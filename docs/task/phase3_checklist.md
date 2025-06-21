@@ -66,19 +66,19 @@ This checklist covers the implementation of OAuth 2.0 authentication, in-page UI
 
 ### 2.3 Content Script Communication
 
-- [ ] Implement message passing between content script and background
-- [ ] Create content script → background API for description generation
+- [x] Implement message passing between content script and background
+- [x] Create content script → background API for description generation
 - [ ] Add proper error handling and user feedback in content script
-- [ ] Implement loading state indication during API calls
+- [x] Implement loading state indication during API calls
 - [ ] Add success/failure notifications in page context
 
 ### 2.4 Content Script Styling
 
-- [ ] Create `frontend/src/content/content.css` for injected UI
+- [x] Create `frontend/src/content/content.css` for injected UI
 - [ ] Implement responsive design for different screen sizes
 - [ ] Add dark mode compatibility
 - [ ] Ensure styling doesn't conflict with Bitbucket's CSS
-- [ ] Update webpack config to include content.css copying
+- [x] Update webpack config to include content.css copying
 
 ---
 

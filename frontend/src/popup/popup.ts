@@ -548,8 +548,9 @@ class PopupController {
         id: 'ollama',
         name: 'Ollama (Local)',
         models: [
-          { id: 'llama3', name: 'Llama 3 (default)' },
-          { id: 'codellama', name: 'CodeLlama' },
+          { id: 'llama3:8b-instruct-q4_0', name: 'Llama 3 (default)' },
+          { id: 'mistral:latest', name: 'mistral:latest' },
+          { id: 'deepseek-r1:8b', name: 'deepseek-r1:8b' },
         ],
         requiresCustomEndpoint: true,
         requiresApiKey: false,
