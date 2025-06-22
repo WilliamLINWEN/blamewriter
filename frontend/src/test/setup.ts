@@ -12,7 +12,7 @@ import { mockChrome, resetChromeMocks } from './mocks/chrome';
 // Mock window.chrome as well (some code might use this)
 Object.defineProperty(window, 'chrome', {
   value: mockChrome,
-  writable: true
+  writable: true,
 });
 
 // Mock fetch for API calls
@@ -32,12 +32,12 @@ beforeEach(() => {
 afterEach(() => {
   // Reset Chrome mocks after each test
   resetChromeMocks();
-  
+
   // Reset fetch mock
   if (jest.isMockFunction(global.fetch)) {
     (global.fetch as jest.Mock).mockClear();
   }
-  
+
   // Restore console
   if (process.env.JEST_VERBOSE !== 'true') {
     console.log = originalConsole.log;
@@ -59,7 +59,7 @@ const localStorageMock = {
   clear: jest.fn(),
 };
 Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
+  value: localStorageMock,
 });
 
 // Mock sessionStorage
@@ -70,15 +70,15 @@ const sessionStorageMock = {
   clear: jest.fn(),
 };
 Object.defineProperty(window, 'sessionStorage', {
-  value: sessionStorageMock
+  value: sessionStorageMock,
 });
 
 // Mock clipboard API
 Object.defineProperty(navigator, 'clipboard', {
   value: {
     writeText: jest.fn(() => Promise.resolve()),
-    readText: jest.fn(() => Promise.resolve('mock clipboard text'))
-  }
+    readText: jest.fn(() => Promise.resolve('mock clipboard text')),
+  },
 });
 
 // Mock ResizeObserver
@@ -96,9 +96,5 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 }));
 
 // Export mock utilities for use in tests
-export {
-  mockChrome,
-  resetChromeMocks,
-  localStorageMock,
-  sessionStorageMock
-} from './mocks/chrome';
+export { mockChrome, resetChromeMocks } from './mocks/chrome';
+export { localStorageMock, sessionStorageMock };

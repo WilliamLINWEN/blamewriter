@@ -13,40 +13,42 @@ const mockStorage: ChromeMockStorage = {};
 // Mock for chrome.storage
 export const mockChromeStorage = {
   local: {
-    get: jest.fn((keys?: string | string[] | null, callback?: (items: ChromeMockStorage) => void) => {
-      const result: ChromeMockStorage = {};
-      
-      if (keys === null || keys === undefined) {
-        // Return all items
-        Object.assign(result, mockStorage);
-      } else if (typeof keys === 'string') {
-        // Single key
-        if (keys in mockStorage) {
-          result[keys] = mockStorage[keys];
-        }
-      } else if (Array.isArray(keys)) {
-        // Array of keys - if empty array, return all items
-        if (keys.length === 0) {
+    get: jest.fn(
+      (keys?: string | string[] | null, callback?: (items: ChromeMockStorage) => void) => {
+        const result: ChromeMockStorage = {};
+
+        if (keys === null || keys === undefined) {
+          // Return all items
           Object.assign(result, mockStorage);
-        } else {
-          keys.forEach(key => {
-            if (key in mockStorage) {
-              result[key] = mockStorage[key];
-            }
+        } else if (typeof keys === 'string') {
+          // Single key
+          if (keys in mockStorage) {
+            result[keys] = mockStorage[keys];
+          }
+        } else if (Array.isArray(keys)) {
+          // Array of keys - if empty array, return all items
+          if (keys.length === 0) {
+            Object.assign(result, mockStorage);
+          } else {
+            keys.forEach(key => {
+              if (key in mockStorage) {
+                result[key] = mockStorage[key];
+              }
+            });
+          }
+        } else if (typeof keys === 'object') {
+          // Object with default values
+          Object.keys(keys).forEach(key => {
+            result[key] = mockStorage[key] !== undefined ? mockStorage[key] : keys[key];
           });
         }
-      } else if (typeof keys === 'object') {
-        // Object with default values
-        Object.keys(keys).forEach(key => {
-          result[key] = mockStorage[key] !== undefined ? mockStorage[key] : keys[key];
-        });
-      }
 
-      if (callback) {
-        setTimeout(() => callback(result), 0);
-      }
-      return Promise.resolve(result);
-    }),
+        if (callback) {
+          setTimeout(() => callback(result), 0);
+        }
+        return Promise.resolve(result);
+      },
+    ),
 
     set: jest.fn((items: ChromeMockStorage, callback?: () => void) => {
       Object.assign(mockStorage, items);
@@ -79,13 +81,13 @@ export const mockChromeStorage = {
 
     getBytesInUse: jest.fn(() => Promise.resolve(0)),
   },
-  
+
   // Add onChanged listener mock
   onChanged: {
     addListener: jest.fn(),
     removeListener: jest.fn(),
-    hasListener: jest.fn()
-  }
+    hasListener: jest.fn(),
+  },
 };
 
 // Mock for chrome.runtime
@@ -93,19 +95,19 @@ export const mockChromeRuntime = {
   sendMessage: jest.fn((message: any, callback?: (response: any) => void) => {
     // Mock response based on message type
     let mockResponse: any = { success: true };
-    
+
     if (message.type === 'GENERATE_DESCRIPTION') {
       mockResponse = {
         success: true,
         description: 'Mock generated description',
         provider: 'openai',
-        model: 'gpt-3.5-turbo'
+        model: 'gpt-3.5-turbo',
       };
     } else if (message.type === 'GET_AUTH_STATUS') {
       mockResponse = {
         success: true,
         authenticated: true,
-        user: { username: 'testuser' }
+        user: { username: 'testuser' },
       };
     }
 
@@ -119,66 +121,69 @@ export const mockChromeRuntime = {
     postMessage: jest.fn(),
     onMessage: {
       addListener: jest.fn(),
-      removeListener: jest.fn()
+      removeListener: jest.fn(),
     },
     onDisconnect: {
       addListener: jest.fn(),
-      removeListener: jest.fn()
-    }
+      removeListener: jest.fn(),
+    },
   })),
 
   onMessage: {
     addListener: jest.fn(),
     removeListener: jest.fn(),
-    hasListener: jest.fn()
+    hasListener: jest.fn(),
   },
 
   onConnect: {
     addListener: jest.fn(),
-    removeListener: jest.fn()
+    removeListener: jest.fn(),
   },
 
   getURL: jest.fn((path: string) => `chrome-extension://mock-extension-id/${path}`),
-  
+
   id: 'mock-extension-id',
-  
+
   getManifest: jest.fn(() => ({
     manifest_version: 3,
     name: 'Mock Extension',
-    version: '1.0.0'
-  }))
+    version: '1.0.0',
+  })),
 };
 
 // Mock for chrome.tabs
 export const mockChromeTabs = {
-  query: jest.fn((queryInfo: chrome.tabs.QueryInfo, callback?: (tabs: chrome.tabs.Tab[]) => void) => {
-    const mockTab: chrome.tabs.Tab = {
-      id: 1,
-      index: 0,
-      windowId: 1,
-      highlighted: true,
-      active: true,
-      pinned: false,
-      url: 'https://bitbucket.org/workspace/repo/pull-requests/123',
-      title: 'Test PR - Bitbucket',
-      favIconUrl: undefined,
-      status: 'complete',
-      incognito: false,
-      selected: true,
-      audible: false,
-      discarded: false,
-      autoDiscardable: true,
-      mutedInfo: { muted: false },
-      width: 1200,
-      height: 800
-    };
+  query: jest.fn(
+    (queryInfo: chrome.tabs.QueryInfo, callback?: (tabs: chrome.tabs.Tab[]) => void) => {
+      const mockTab: chrome.tabs.Tab = {
+        id: 1,
+        index: 0,
+        windowId: 1,
+        highlighted: true,
+        active: true,
+        pinned: false,
+        url: 'https://bitbucket.org/workspace/repo/pull-requests/123',
+        title: 'Test PR - Bitbucket',
+        favIconUrl: undefined,
+        status: 'complete',
+        incognito: false,
+        selected: true,
+        audible: false,
+        discarded: false,
+        autoDiscardable: true,
+        mutedInfo: { muted: false },
+        width: 1200,
+        height: 800,
+        groupId: 0,
+      };
 
-    const result = [mockTab];
-    if (callback) {
-      setTimeout(() => callback(result), 0);
-    }
-    return Promise.resolve(result);
-  }),
+      const result = [mockTab];
+      if (callback) {
+        setTimeout(() => callback(result), 0);
+      }
+      return Promise.resolve(result);
+    },
+  ),
 
   sendMessage: jest.fn((tabId: number, message: any, callback?: (response: any) => void) => {
     const mockResponse = { success: true };
@@ -191,16 +196,16 @@ export const mockChromeTabs = {
   create: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
-  
+
   onUpdated: {
     addListener: jest.fn(),
-    removeListener: jest.fn()
+    removeListener: jest.fn(),
   },
 
   onActivated: {
     addListener: jest.fn(),
-    removeListener: jest.fn()
-  }
+    removeListener: jest.fn(),
+  },
 };
 
 // Mock for chrome.action (Manifest V3)
@@ -210,11 +215,11 @@ export const mockChromeAction = {
   setIcon: jest.fn(),
   setTitle: jest.fn(),
   setPopup: jest.fn(),
-  
+
   onClicked: {
     addListener: jest.fn(),
-    removeListener: jest.fn()
-  }
+    removeListener: jest.fn(),
+  },
 };
 
 // Complete Chrome mock object
@@ -222,7 +227,7 @@ export const mockChrome = {
   storage: mockChromeStorage,
   runtime: mockChromeRuntime,
   tabs: mockChromeTabs,
-  action: mockChromeAction
+  action: mockChromeAction,
 };
 
 // Helper function to clear storage data

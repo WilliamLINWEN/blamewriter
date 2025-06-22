@@ -19,8 +19,6 @@ interface AuthStatusMessage {
   type: 'GET_AUTH_STATUS';
 }
 
-type ExtensionMessage = GenerateDescriptionMessage | AuthStatusMessage;
-
 describe('Chrome Extension Messaging', () => {
   describe('runtime.sendMessage', () => {
     it('should send message and receive response', async () => {
@@ -30,8 +28,8 @@ describe('Chrome Extension Messaging', () => {
           prUrl: 'https://bitbucket.org/workspace/repo/pull-requests/123',
           template: 'Default template',
           provider: 'openai',
-          model: 'gpt-3.5-turbo'
-        }
+          model: 'gpt-3.5-turbo',
+        },
       };
 
       const response = await chrome.runtime.sendMessage(message);
@@ -41,13 +39,13 @@ describe('Chrome Extension Messaging', () => {
         success: true,
         description: 'Mock generated description',
         provider: 'openai',
-        model: 'gpt-3.5-turbo'
+        model: 'gpt-3.5-turbo',
       });
     });
 
     it('should handle auth status requests', async () => {
       const message: AuthStatusMessage = {
-        type: 'GET_AUTH_STATUS'
+        type: 'GET_AUTH_STATUS',
       };
 
       const response = await chrome.runtime.sendMessage(message);
@@ -56,22 +54,19 @@ describe('Chrome Extension Messaging', () => {
       expect(response).toEqual({
         success: true,
         authenticated: true,
-        user: { username: 'testuser' }
+        user: { username: 'testuser' },
       });
     });
 
-    it('should handle message with callback', (done) => {
+    it('should handle message with callback', done => {
       const message = { type: 'TEST_MESSAGE' };
 
-      chrome.runtime.sendMessage(message, (response) => {
+      chrome.runtime.sendMessage(message, response => {
         expect(response).toEqual({ success: true });
         done();
       });
 
-      expect(mockChromeRuntime.sendMessage).toHaveBeenCalledWith(
-        message,
-        expect.any(Function)
-      );
+      expect(mockChromeRuntime.sendMessage).toHaveBeenCalledWith(message, expect.any(Function));
     });
   });
 
@@ -81,8 +76,8 @@ describe('Chrome Extension Messaging', () => {
       const message = {
         type: 'FILL_DESCRIPTION',
         payload: {
-          description: 'Generated PR description'
-        }
+          description: 'Generated PR description',
+        },
       };
 
       const response = await chrome.tabs.sendMessage(tabId, message);
@@ -91,20 +86,16 @@ describe('Chrome Extension Messaging', () => {
       expect(response).toEqual({ success: true });
     });
 
-    it('should handle tab message with callback', (done) => {
+    it('should handle tab message with callback', done => {
       const tabId = 1;
       const message = { type: 'PING' };
 
-      chrome.tabs.sendMessage(tabId, message, (response) => {
+      chrome.tabs.sendMessage(tabId, message, response => {
         expect(response).toEqual({ success: true });
         done();
       });
 
-      expect(mockChromeTabs.sendMessage).toHaveBeenCalledWith(
-        tabId,
-        message,
-        expect.any(Function)
-      );
+      expect(mockChromeTabs.sendMessage).toHaveBeenCalledWith(tabId, message, expect.any(Function));
     });
   });
 

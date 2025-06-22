@@ -2,8 +2,8 @@
  * Integration tests for popup UI components
  */
 
-import { screen, fireEvent, waitFor } from '@testing-library/dom';
-import { mockChromeStorage, mockChromeRuntime, mockChromeTabs, setMockStorageData } from '../mocks/chrome';
+import { screen, fireEvent } from '@testing-library/dom';
+import { mockChromeRuntime, mockChromeTabs, setMockStorageData } from '../mocks/chrome';
 
 // Mock popup HTML structure
 const createPopupDOM = () => {
@@ -59,7 +59,7 @@ const mockPopupController = {
     const loginBtn = document.getElementById('login-btn')!;
     const logoutBtn = document.getElementById('logout-btn')!;
     const generationSection = document.getElementById('generation-section')!;
-    
+
     if (response.authenticated) {
       authStatus.textContent = `Logged in as ${response.user.username}`;
       loginBtn.style.display = 'none';
@@ -76,12 +76,12 @@ const mockPopupController = {
   loadTemplates: async () => {
     const templates = await chrome.storage.local.get(['templates']);
     const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
-    
+
     // Clear existing dynamically added options (keep first 3 default options)
     while (templateSelect.options.length > 3) {
       templateSelect.removeChild(templateSelect.lastChild!);
     }
-    
+
     if (templates.templates) {
       templates.templates.forEach((template: any) => {
         const option = document.createElement('option');
@@ -96,15 +96,15 @@ const mockPopupController = {
     const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
     const providerSelect = document.getElementById('provider-select') as HTMLSelectElement;
     const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
-    
+
     const message = {
       type: 'GENERATE_DESCRIPTION',
       payload: {
         template: templateSelect.value,
         provider: providerSelect.value,
         model: modelSelect.value,
-        prUrl: 'https://bitbucket.org/workspace/repo/pull-requests/123'
-      }
+        prUrl: 'https://bitbucket.org/workspace/repo/pull-requests/123',
+      },
     };
 
     try {
@@ -112,14 +112,14 @@ const mockPopupController = {
       if (response.success) {
         const resultsSection = document.getElementById('results-section')!;
         const descriptionDiv = document.getElementById('generated-description')!;
-        
+
         descriptionDiv.textContent = response.description;
         resultsSection.style.display = 'block';
       }
     } catch (error) {
       const errorSection = document.getElementById('error-section')!;
       const errorMessage = document.getElementById('error-message')!;
-      
+
       errorMessage.textContent = 'Failed to generate description';
       errorSection.style.display = 'block';
     }
@@ -131,7 +131,7 @@ const mockPopupController = {
       const description = document.getElementById('generated-description')!.textContent;
       await chrome.tabs.sendMessage(tabs[0].id, {
         type: 'FILL_DESCRIPTION',
-        payload: { description }
+        payload: { description },
       });
     }
   },
@@ -141,7 +141,7 @@ const mockPopupController = {
     if (description) {
       await navigator.clipboard.writeText(description);
     }
-  }
+  },
 };
 
 describe('Popup Integration Tests', () => {
@@ -154,7 +154,7 @@ describe('Popup Integration Tests', () => {
       // Mock unauthenticated state
       (mockChromeRuntime.sendMessage as jest.Mock).mockResolvedValueOnce({
         success: true,
-        authenticated: false
+        authenticated: false,
       });
 
       await mockPopupController.checkAuthStatus();
@@ -169,7 +169,7 @@ describe('Popup Integration Tests', () => {
       (mockChromeRuntime.sendMessage as jest.Mock).mockResolvedValueOnce({
         success: true,
         authenticated: true,
-        user: { username: 'testuser' }
+        user: { username: 'testuser' },
       });
 
       await mockPopupController.checkAuthStatus();
@@ -184,7 +184,7 @@ describe('Popup Integration Tests', () => {
     it('should load templates from storage', async () => {
       const mockTemplates = [
         { id: 'template1', name: 'Bug Fix Template', content: 'Bug fix content' },
-        { id: 'template2', name: 'Feature Template', content: 'Feature content' }
+        { id: 'template2', name: 'Feature Template', content: 'Feature content' },
       ];
 
       setMockStorageData({ templates: mockTemplates });
@@ -213,7 +213,7 @@ describe('Popup Integration Tests', () => {
       const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
       const providerSelect = document.getElementById('provider-select') as HTMLSelectElement;
       const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
-      
+
       templateSelect.value = 'default';
       providerSelect.value = 'openai';
       modelSelect.value = 'gpt-3.5-turbo';
@@ -228,8 +228,8 @@ describe('Popup Integration Tests', () => {
           template: 'default',
           provider: 'openai',
           model: 'gpt-3.5-turbo',
-          prUrl: 'https://bitbucket.org/workspace/repo/pull-requests/123'
-        }
+          prUrl: 'https://bitbucket.org/workspace/repo/pull-requests/123',
+        },
       });
 
       expect(document.getElementById('results-section')).toBeVisible();
@@ -238,7 +238,7 @@ describe('Popup Integration Tests', () => {
 
     it('should handle generation errors', async () => {
       (mockChromeRuntime.sendMessage as jest.Mock).mockRejectedValueOnce(
-        new Error('Network error')
+        new Error('Network error'),
       );
 
       await mockPopupController.generateDescription();
@@ -255,13 +255,13 @@ describe('Popup Integration Tests', () => {
 
       await mockPopupController.fillIntoPage();
 
-      expect(mockChromeTabs.query).toHaveBeenCalledWith({ 
-        active: true, 
-        currentWindow: true 
+      expect(mockChromeTabs.query).toHaveBeenCalledWith({
+        active: true,
+        currentWindow: true,
       });
       expect(mockChromeTabs.sendMessage).toHaveBeenCalledWith(1, {
         type: 'FILL_DESCRIPTION',
-        payload: { description: 'Test description' }
+        payload: { description: 'Test description' },
       });
     });
   });
@@ -279,10 +279,10 @@ describe('Popup Integration Tests', () => {
       // Select values
       templateSelect.value = 'default';
       fireEvent.change(templateSelect);
-      
+
       providerSelect.value = 'openai';
       fireEvent.change(providerSelect);
-      
+
       modelSelect.value = 'gpt-3.5-turbo';
       fireEvent.change(modelSelect);
 
@@ -297,7 +297,7 @@ describe('Popup Integration Tests', () => {
 
     it('should copy description to clipboard', async () => {
       document.getElementById('generated-description')!.textContent = 'Test description';
-      
+
       await mockPopupController.copyToClipboard();
 
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Test description');

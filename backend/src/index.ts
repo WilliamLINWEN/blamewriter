@@ -53,18 +53,21 @@ export function createApp() {
   app.use('/api/auth', authRouter);
 
   // Basic error handling middleware
-  app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Error occurred:', err);
+  app.use(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      console.error('Error occurred:', err);
 
-    // Don't expose internal error details in production
-    const isDevelopment = envConfig.NODE_ENV !== 'production';
+      // Don't expose internal error details in production
+      const isDevelopment = envConfig.NODE_ENV !== 'production';
 
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: isDevelopment ? err.message : 'Something went wrong',
-      timestamp: new Date().toISOString(),
-    });
-  });
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: isDevelopment ? err.message : 'Something went wrong',
+        timestamp: new Date().toISOString(),
+      });
+    },
+  );
 
   // 404 handler for unmatched routes
   app.use('*', (req, res) => {

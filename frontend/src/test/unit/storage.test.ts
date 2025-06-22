@@ -2,7 +2,12 @@
  * Unit tests for Chrome extension storage utilities
  */
 
-import { mockChromeStorage, setMockStorageData, getMockStorageData, clearMockStorageData } from '../mocks/chrome';
+import {
+  mockChromeStorage,
+  setMockStorageData,
+  getMockStorageData,
+  clearMockStorageData,
+} from '../mocks/chrome';
 
 // Mock implementation of storage utilities (these would be imported from actual files)
 const mockSaveToStorage = async (data: Record<string, any>): Promise<void> => {
@@ -24,7 +29,7 @@ describe('Chrome Storage Utilities', () => {
     it('should save data to chrome storage', async () => {
       const testData = {
         templates: [{ id: '1', name: 'Test Template', content: 'Test content' }],
-        selectedProvider: 'openai'
+        selectedProvider: 'openai',
       };
 
       await mockSaveToStorage(testData);
@@ -46,9 +51,9 @@ describe('Chrome Storage Utilities', () => {
     it('should load data from chrome storage', async () => {
       const testData = {
         templates: [{ id: '1', name: 'Test Template' }],
-        authStatus: { authenticated: true }
+        authStatus: { authenticated: true },
       };
-      
+
       setMockStorageData(testData);
 
       const result = await mockLoadFromStorage(['templates', 'authStatus']);
