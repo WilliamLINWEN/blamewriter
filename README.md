@@ -117,11 +117,13 @@ This project adopts a typical **frontend-backend separation architecture**:
 blamewriter/
 ├── backend/                 # Backend Node.js service
 │   ├── src/                # Source code
+│   │   └── test/          # Backend test suite (Jest + Supertest + MSW)
 │   ├── package.json        # Backend dependencies
 │   ├── tsconfig.json       # TypeScript configuration
 │   └── .env.example        # Environment variables template
 ├── frontend/               # Browser extension
 │   ├── src/                # Extension source code
+│   │   └── test/          # Frontend test suite (Jest + Testing Library)
 │   ├── dist/               # Built extension (generated)
 │   ├── manifest.json       # Extension manifest
 │   └── package.json        # Frontend dependencies
@@ -129,6 +131,7 @@ blamewriter/
 │   ├── PRD.md             # Product Requirements Document
 │   ├── technical_doc/      # Technical documentation
 │   └── task/              # Task checklists
+├── Makefile               # Build and test commands
 ├── .gitignore             # Git ignore rules
 └── README.md              # This file
 ```
@@ -146,6 +149,9 @@ blamewriter/
 - `npm run dev` - Build extension in development mode with watch
 - `npm run build` - Build extension for production
 - `npm run package` - Package extension for distribution
+- `npm test` - Run test suite (Jest + Testing Library + Chrome extension mocks)
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage reports
 
 ## 🚀 Features
 
@@ -210,6 +216,47 @@ make test-integration
 
 **Coverage Reports:**
 Test coverage reports are generated in `backend/coverage/` with HTML, LCOV, and JSON formats.
+
+### Automated Testing (Frontend)
+
+The frontend includes a comprehensive test suite using Jest, Testing Library, and Chrome extension mocks:
+
+**Test Framework:**
+- **Jest** - Testing framework with TypeScript support and jsdom environment
+- **Testing Library** - DOM testing utilities for user interaction simulation
+- **Chrome Extension Mocks** - Complete API mocking for storage, runtime, tabs, and action APIs
+
+**Test Commands:**
+```bash
+# Run all frontend tests
+make test-frontend
+# or
+cd frontend && npm test
+
+# Run tests in watch mode
+make test-frontend-watch
+
+# Run tests with coverage
+make test-frontend-coverage
+
+# Run only unit tests
+make test-frontend-unit
+
+# Run only integration tests
+make test-frontend-integration
+
+# Run both backend and frontend tests
+make test-all
+```
+
+**Test Structure:**
+- `frontend/src/test/unit/` - Unit tests for Chrome extension utilities (storage, messaging)
+- `frontend/src/test/integration/` - Integration tests for popup UI and user workflows
+- `frontend/src/test/mocks/` - Chrome extension API mocks and test utilities
+- `frontend/src/test/setup.ts` - Global test configuration and environment setup
+
+**Coverage Reports:**
+Test coverage reports are generated in `frontend/coverage/` with HTML, LCOV, and JSON formats.
 
 ### Manual Testing
 
