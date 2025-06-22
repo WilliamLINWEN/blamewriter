@@ -174,6 +174,43 @@ blamewriter/
 
 ## 🧪 Testing
 
+### Automated Testing (Backend)
+
+The backend includes a comprehensive test suite using Jest, Supertest, and MSW:
+
+**Test Framework:**
+- **Jest** - Testing framework with TypeScript support
+- **Supertest** - HTTP endpoint testing
+- **MSW** (Mock Service Worker) - API mocking for external services
+
+**Test Commands:**
+```bash
+# Run all tests
+make test
+# or
+cd backend && npm test
+
+# Run tests in watch mode
+make test-watch
+
+# Run tests with coverage
+make test-coverage
+
+# Run only unit tests
+make test-unit
+
+# Run only integration tests
+make test-integration
+```
+
+**Test Structure:**
+- `backend/src/test/unit/` - Unit tests for individual components
+- `backend/src/test/integration/` - API endpoint integration tests
+- `backend/src/test/mocks/` - MSW handlers for external API mocking
+
+**Coverage Reports:**
+Test coverage reports are generated in `backend/coverage/` with HTML, LCOV, and JSON formats.
+
 ### Manual Testing
 
 1. Load extension in Chrome developer mode
@@ -216,7 +253,11 @@ development team.
   - [ ] Large diff processing (Map-Reduce)
   - [ ] Enhanced Options Page UI
 - [ ] Phase 3: Advanced UI/UX and team features  
-- [ ] Phase 4: Multi-platform support (GitHub, GitLab)
+- [ ] Phase 4: Streaming support for large diffs
+  - [ ] Implement streaming LLM responses for large diffs
+  - [ ] Improve UI to handle streaming updates
+  - [ ] Optimize performance for large PRs
+- [ ] Phase 5: Multi-platform support (GitHub, GitLab)
 
 ## 📈 Recent Updates
 
